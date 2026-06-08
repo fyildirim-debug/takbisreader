@@ -1,0 +1,16 @@
+{
+  "name": "takbis-parser",
+  "version": "1.0.0",
+  "description": "TAKBIS / Web Tapu PDF belgelerinden taşınmaz, şerh-beyan-irtifak, mülkiyet ve ipotek bilgilerini otomatik çıkaran web uygulaması",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1"
+  }
+}

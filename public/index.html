@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TAKBIS PDF Ayrıştırıcı</title>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card2: #273449; --line: #334155;
+    --txt: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8; --accent2:#0ea5e9;
+    --green:#22c55e; --red:#ef4444; --amber:#f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Roboto, system-ui, sans-serif; background: var(--bg); color: var(--txt); line-height: 1.5; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; background: linear-gradient(90deg,#0c1a33,#0f172a); }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 12px; }
+
+  .layout { display:flex; min-height: calc(100vh - 64px); }
+  /* Sidebar */
+  .sidebar { width: 280px; flex-shrink:0; border-right:1px solid var(--line); background:#0c1626; display:flex; flex-direction:column; }
+  .side-head { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; }
+  .side-head .cnt { color:var(--muted); font-weight:400; font-size:12px; }
+  .side-head button { margin-left:auto; background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:6px; cursor:pointer; padding:3px 8px; font-size:12px; }
+  .side-head button:hover { border-color:var(--red); color:var(--red); }
+  #histList { overflow-y:auto; flex:1; }
+  .hist-item { padding:10px 14px; border-bottom:1px solid #1c2940; cursor:pointer; transition:.12s; position:relative; }
+  .hist-item:hover { background:var(--card2); }
+  .hist-item.active { background:#15304a; border-left:3px solid var(--accent); }
+  .hist-item .hn { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hist-item .hm { font-size:11px; color:var(--muted); margin-top:2px; }
+  .hist-item .hx { position:absolute; right:8px; top:8px; color:var(--muted); opacity:0; font-size:14px; }
+  .hist-item:hover .hx { opacity:1; }
+  .hist-item .hx:hover { color:var(--red); }
+  .side-foot { padding:10px 14px; border-top:1px solid var(--line); display:flex; gap:8px; }
+  .side-foot button { flex:1; background:transparent; border:1px solid var(--line); color:var(--txt); border-radius:6px; cursor:pointer; padding:7px; font-size:12px; }
+  .side-foot button:hover { border-color:var(--accent); color:var(--accent); }
+  .side-empty { padding:20px 16px; color:var(--muted); font-size:12.5px; font-style:italic; }
+
+  /* Main */
+  .main { flex:1; padding: 20px 24px 60px; overflow:hidden; }
+  .main > * { max-width: 1000px; margin-left:auto; margin-right:auto; }
+  #drop { border: 2px dashed var(--line); border-radius: 12px; padding: 22px 20px; text-align: center; cursor: pointer; transition: .15s; background: var(--card); margin-bottom:18px; }
+  #drop.drag { border-color: var(--accent); background: var(--card2); }
+  #drop h2 { margin: 0 0 4px; font-size: 15px; }
+  #drop p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  #drop .icon { font-size: 30px; }
+
+  button.act { background: var(--accent2); color: #04263a; border: 0; padding: 9px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+  button.act:hover { background: var(--accent); }
+
+  .section { margin-top: 18px; }
+  .section h3 { font-size: 14px; text-transform: uppercase; letter-spacing:.5px; color: var(--accent); margin: 0 0 8px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .kv { display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 4px 18px; }
+  .kv .row { display:flex; gap:8px; padding:4px 0; border-bottom:1px dotted #2b3a52; font-size:13.5px; }
+  .kv .k { color: var(--muted); min-width: 160px; }
+  .kv .v { font-weight:500; }
+
+  table { width:100%; border-collapse: collapse; font-size:13px; margin-top:4px; }
+  th, td { text-align:left; padding:7px 9px; border:1px solid var(--line); vertical-align:top; }
+  th { background: var(--card2); color: var(--muted); font-weight:600; white-space:nowrap; }
+  td.tur { white-space:nowrap; font-weight:600; }
+  .tag { display:inline-block; padding:1px 8px; border-radius:99px; font-size:11px; font-weight:700; }
+  .tag.Beyan { background:#1e3a5f; color:#7dd3fc; }
+  .tag.Şerh { background:#3f1d1d; color:#fca5a5; }
+  .tag.İrtifak { background:#3a2e10; color:#fcd34d; }
+  .tag.İpotek { background:#3b1d3a; color:#f0abfc; }
+
+  .acik { display:flex; gap:8px; align-items:flex-start; }
+  .acik-txt { flex:1; min-width:0; }
+  .copybtn { flex-shrink:0; background:transparent; border:1px solid var(--line); color:var(--muted); width:28px; height:28px; padding:0; border-radius:7px; cursor:pointer; font-size:14px; display:inline-flex; align-items:center; justify-content:center; transition:.15s; line-height:1; }
+  .copybtn:hover { border-color:var(--accent); color:var(--accent); background:var(--card2); }
+  .copybtn.ok { border-color:var(--green); color:var(--green); }
+  .copybtn.wide { width:auto; padding:0 12px; font-size:12.5px; gap:6px; white-space:nowrap; height:32px; }
+  .empty { color: var(--muted); font-style: italic; font-size:13px; padding:6px 0; }
+  .err { color: var(--red); font-weight:600; }
+  .ipotek-card { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:14px; background:#16233a; }
+  .ipotek-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .ipotek-no { font-weight:700; color:var(--accent); font-size:13px; flex-shrink:0; }
+  .std-txt { flex:1; min-width:200px; font-size:12.5px; color:#cbd5e1; font-style:italic; background:#0b1322; border:1px solid var(--line); border-radius:7px; padding:6px 10px; }
+  .subttl { font-size:12px; color:var(--muted); font-weight:600; margin:12px 0 4px; text-transform:uppercase; letter-spacing:.4px; }
+  .raw { margin-top:8px; }
+  .raw summary { cursor:pointer; color: var(--muted); font-size:12px; }
+  .raw pre { background:#0b1322; border:1px solid var(--line); border-radius:8px; padding:10px; font-size:11.5px; white-space:pre-wrap; max-height:260px; overflow:auto; color:#9fb3cc; }
+
+  /* Rapor bloğu */
+  .rapor { border:1px solid var(--accent2); border-radius:12px; background:#0c1c2e; margin-bottom:6px; overflow:hidden; }
+  .rapor-head { display:flex; align-items:center; gap:10px; padding:12px 16px; background:#103049; border-bottom:1px solid var(--line); }
+  .rapor-head .t { font-weight:700; font-size:14px; color:#bae6fd; }
+  .rapor-head .copybtn.wide { margin-left:auto; background:var(--accent2); color:#04263a; border:0; }
+  .rapor-head .copybtn.wide:hover { background:var(--accent); }
+  .rapor textarea { width:100%; border:0; background:#0c1c2e; color:#e2e8f0; padding:14px 16px; font-family:"Consolas","Courier New",monospace; font-size:12.5px; line-height:1.55; resize:vertical; min-height:280px; outline:none; }
+
+  .doc-title { font-size:16px; font-weight:700; margin:6px 0 2px; }
+  .doc-sub { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
+  .loader { display:none; align-items:center; gap:10px; color:var(--muted); margin:18px 0; }
+  .loader.show { display:flex; }
+  .spin { width:18px;height:18px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin { to { transform: rotate(360deg);} }
+  .placeholder { text-align:center; color:var(--muted); margin-top:60px; font-size:14px; }
+  .placeholder .big { font-size:46px; }
+  .site-foot { margin-top:46px; padding-top:16px; border-top:1px solid var(--line); color:#64748b; font-size:11px; text-align:center; line-height:1.8; }
+  .site-foot b { color:var(--muted); font-weight:600; }
+  .site-foot a { color:var(--accent2); text-decoration:none; }
+  .site-foot a:hover { color:var(--accent); text-decoration:underline; }
+</style>
+</head>
+<body>
+<header>
+  <div style="font-size:26px">🏠</div>
+  <div>
+    <h1>TAKBIS / Web Tapu PDF Ayrıştırıcı</h1>
+    <div class="sub">PDF yükleyin → takyidat bilgileri çıkarılır + rapora hazır metin oluşturulur</div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="side-head">📚 Geçmiş <span class="cnt" id="histCnt"></span>
+      <button id="btnClearHist" title="Tüm geçmişi sil">Temizle</button>
+    </div>
+    <div id="histList"></div>
+    <div class="side-foot">
+      <button id="btnExcel">⬇ Excel</button>
+      <button id="btnJson">⬇ JSON</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="drop">
+      <div class="icon">📄</div>
+      <h2>PDF dosyasını buraya sürükleyin veya tıklayın</h2>
+      <p>Yeni belge açıldığında bu görünüm yenilenir; eskiler soldaki geçmişte kalır</p>
+      <input type="file" id="fileInput" accept="application/pdf" multiple hidden />
+    </div>
+    <div class="loader" id="loader"><div class="spin"></div><span>PDF okunuyor...</span></div>
+    <div id="current"></div>
+    <footer class="site-foot">
+      🔒 Bilgileriniz sunucuda <b>saklanmaz</b>; yalnızca kullandığınız cihazın tarayıcı önbelleğinde (localStorage) tutulur.<br>
+      Yapımcı: <a href="https://furkanyildirim.com/" target="_blank" rel="noopener">Furkan Yıldırım</a>
+    </footer>
+  </main>
+</div>
+
+<script>
+const LS_KEY = 'takbis_history_v1';
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+const loader = document.getElementById('loader');
+const currentEl = document.getElementById('current');
+const histListEl = document.getElementById('histList');
+
+let history = loadHistory();
+let currentId = history.length ? history[0].id : null;
+
+function loadHistory(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; } }
+function saveHistory(){ try { localStorage.setItem(LS_KEY, JSON.stringify(history)); } catch(e){ alert('Geçmiş kaydedilemedi (depolama dolu olabilir): '+e.message); } }
+
+drop.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('drag'); }));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('drag'); }));
+drop.addEventListener('drop', ev => handleFiles(ev.dataTransfer.files));
+
+async function handleFiles(files) {
+  const pdfs = [...files].filter(f => f.name.toLowerCase().endsWith('.pdf'));
+  if (!pdfs.length) return;
+  loader.classList.add('show');
+  const fd = new FormData();
+  pdfs.forEach(f => fd.append('files', f));
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 120000); // 2 dk güvenlik zaman aşımı
+  try {
+    const res = await fetch('/api/parse', { method: 'POST', body: fd, signal: ctrl.signal });
+    clearTimeout(timer);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    json.sonuclar.forEach(r => {
+      if (!r.basarili) { alert(r.dosyaAdi + ' okunamadı: ' + r.hata); return; }
+      const item = {
+        id: 'd' + Date.now() + Math.floor(Math.random()*1000),
+        dosyaAdi: r.dosyaAdi, sayfaSayisi: r.sayfaSayisi,
+        eklenme: new Date().toLocaleString('tr-TR'),
+        veri: r.veri,
+      };
+      history.unshift(item);
+      currentId = item.id;
+    });
+    if (history.length > 200) history = history.slice(0, 200);
+    saveHistory();
+    renderSidebar();
+    renderCurrent();
+  } catch (e) {
+    clearTimeout(timer);
+    alert(e.name === 'AbortError'
+      ? 'İşlem zaman aşımına uğradı (sunucu yanıt vermedi). Lütfen tekrar deneyin.'
+      : 'Hata: ' + e.message);
+  } finally {
+    loader.classList.remove('show');
+    fileInput.value = '';
+  }
+}
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+// ---------- Para ve ipotek standart metni ----------
+function trPara(borc){
+  const m = String(borc).match(/([\d.,]+)/);
+  if(!m) return borc;
+  let raw = m[1], tam = raw, kurus = '';
+  const dec = raw.match(/[.,](\d{1,2})$/);
+  if(dec){ kurus = dec[1]; tam = raw.slice(0, dec.index); }
+  tam = tam.replace(/[.,]/g,'').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  let s = tam;
+  if(kurus && /[1-9]/.test(kurus)) s += ',' + kurus;
+  return s + ' TL';
+}
+function ipotekStandart(e){
+  const al = String(e.alacakli||'').replace(/\s*VKN:.*$/i,'').replace(/\s+/g,' ').trim();
+  const derece = String(e.dereceSira||'').split('/')[0] || '';
+  const para = trPara(e.borc);
+  const tarih = String(e.tarih||'').replace(/-/g,'.');
+  const dereceTxt = derece ? `${derece}. dereceden ` : '';
+  let s = `${al} lehine ${dereceTxt}${para} bedelle ipotek mevcuttur.`;
+  if(tarih || e.yevmiye){
+    const par = [];
+    if(tarih) par.push(`${tarih} tarih`);
+    if(e.yevmiye) par.push(`${e.yevmiye} yevmiye`);
+    s += ` (${par.join(', ')})`;
+  }
+  return s;
+}
+
+// ---------- Rapora hazır metin ----------
+function coreText(aciklama){ // sondaki "(.. tarih, .. yevmiye)" ekini at
+  return String(aciklama).replace(/\s*\([^)]*tarih[^)]*\)\s*$/,'').trim();
+}
+// Tekilleştirme anahtarı: haciz kayıtlarında dosya no + tutar (sayfa kırılması
+// nedeniyle metni bozulmuş mükerrer kayıtları da birleştirir), yoksa düz metin.
+function dedupKey(aciklama){
+  const tur = (aciklama.match(/^(İcrai Haciz|İhtiyati Haciz|Kamu Haczi)/)||[''])[0];
+  const dosya = (aciklama.match(/\d{4}\/\d{3,}/)||[''])[0];
+  const tutar = (aciklama.match(/([\d.]+[.,]\d+|\d{4,})\s*TL/)||['',''])[1];
+  if(tur && dosya) return tur+'|'+dosya+'|'+tutar;
+  return coreText(aciklama);
+}
+function dedupCore(arr){
+  const seen = new Set(); const out = [];
+  for(const e of arr){ const k = dedupKey(e.aciklama); if(seen.has(k)) continue; seen.add(k); out.push(e); }
+  return out;
+}
+function raporMetni(v){
+  const tum = [...(v.tasinmazSerhBeyan||[]), ...(v.mulkiyetSerhBeyan||[])];
+  const rehinSerhler = (v.ipotekler||[]).flatMap(i => i.rehinSerh||[]);
+  const beyanlar = dedupCore(tum.filter(e => e.tur === 'Beyan'));
+  const serhler = dedupCore([...tum.filter(e => e.tur === 'Şerh' || e.tur === 'İrtifak'), ...rehinSerhler]);
+  const rehinS = dedupCore(rehinSerhler);
+  const icrai = serhler.filter(e => /^İcrai Haciz/.test(e.aciklama)).length;
+  const ihtiyati = serhler.filter(e => /^İhtiyati Haciz/.test(e.aciklama)).length;
+
+  const L = [];
+  L.push('TAPU TAKYİDAT BİLGİLERİ');
+  L.push('Takyidatlar');
+  L.push('');
+  L.push('Beyanlar Hanesinde:');
+  beyanlar.length ? beyanlar.forEach(e => L.push('-' + e.aciklama)) : L.push('Yoktur.');
+  L.push('');
+  L.push('Şerhler Hanesinde:');
+  serhler.length ? serhler.forEach(e => L.push('-' + e.aciklama)) : L.push('Yoktur.');
+  L.push('');
+  L.push('Rehinler Hanesinde:');
+  (v.ipotekler && v.ipotekler.length) ? v.ipotekler.forEach(ip => L.push('-' + ipotekStandart(ip))) : L.push('Yoktur.');
+  L.push('');
+  L.push('Rehinlere Ait Şerhler:');
+  rehinS.length ? rehinS.forEach(e => L.push('-' + e.aciklama)) : L.push('Yoktur.');
+  L.push('');
+  if(icrai > 0) L.push(`-Taşınmaz üzerinde ${icrai} adet icrai haciz bulunmaktadır.`);
+  if(ihtiyati > 0) L.push(`-Taşınmaz üzerinde ${ihtiyati} adet ihtiyati haciz bulunmaktadır.`);
+  return L.join('\n');
+}
+
+// ---------- Render yardımcıları ----------
+const KAYIT_LABELS = {
+  zeminTipi:'Zemin Tipi', tasinmazKimlikNo:'Taşınmaz Kimlik No', ilIlce:'İl/İlçe',
+  kurumAdi:'Kurum Adı', mahalleKoy:'Mahalle/Köy Adı', mevkii:'Mevkii',
+  ciltSayfaNo:'Cilt/Sayfa No', kayitDurum:'Kayıt Durum', adaParsel:'Ada/Parsel',
+  atYuzolcum:'AT Yüzölçüm (m²)', bbNitelik:'Bağımsız Bölüm Nitelik',
+  bbBrut:'B.B. Brüt Yüzölçümü', bbNet:'B.B. Net Yüzölçümü',
+  blokKatGiris:'Blok/Kat/Giriş/BBNo', arsaPayPayda:'Arsa Pay/Payda',
+  anaTasinmazNitelik:'Ana Taşınmaz Nitelik'
+};
+function kvBlock(obj, labels){
+  const rows = Object.keys(labels).filter(k => obj[k] !== undefined && obj[k] !== '')
+    .map(k => `<div class="row"><span class="k">${labels[k]}</span><span class="v">${esc(obj[k])}</span></div>`).join('');
+  return rows ? `<div class="kv">${rows}</div>` : '<div class="empty">Bilgi bulunamadı</div>';
+}
+function serhTable(arr){
+  if(!arr || !arr.length) return '<div class="empty">Kayıt yok</div>';
+  const rows = arr.map(e => `<tr>
+    <td class="tur"><span class="tag ${e.tur}">${esc(e.tur)}</span></td>
+    <td><div class="acik"><span class="acik-txt">${esc(e.aciklama)||'-'}</span><button class="copybtn" title="Açıklamayı kopyala" onclick="copyFrom(this)">⧉</button></div></td>
+    <td>${esc(e.kurum)||'-'}</td>
+    <td>${esc(e.tarih)} ${esc(e.saat||'')}</td>
+    <td>${esc(e.yevmiye)||'-'}</td>
+  </tr>`).join('');
+  return `<table><thead><tr><th>Tür</th><th>Açıklama</th><th>Kurum</th><th>Tarih</th><th>Yevmiye</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function mulkiyetTable(arr){
+  if(!arr || !arr.length) return '<div class="empty">Kayıt yok</div>';
+  const rows = arr.map(e => `<tr>
+    <td>${esc(e.adSoyad)||esc(e.malik)}</td><td>${esc(e.babaAdi)||'-'}</td><td>${esc(e.hisse)||'-'}</td>
+    <td>${esc(e.edinmeSebebi)||'-'}</td><td>${esc(e.edinmeTarihi)||'-'}</td><td>${esc(e.edinmeYevmiye)||'-'}</td>
+  </tr>`).join('');
+  return `<table><thead><tr><th>Malik</th><th>Baba Adı</th><th>Hisse</th><th>Edinme Sebebi</th><th>Edinme Tarihi</th><th>Yevmiye</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function ipotekTable(arr){
+  if(!arr || !arr.length) return '<div class="empty">İpotek kaydı yok</div>';
+  return arr.map((e,i) => {
+    const ozet = `<table><thead><tr><th>Alacaklı</th><th>Müşterek</th><th>Borç</th><th>Faiz</th><th>Derece/Sıra</th><th>Süre</th><th>Tesis (Tarih/Yevmiye)</th></tr></thead>
+      <tbody><tr><td>${esc(e.alacakli)}</td><td>${esc(e.musterek)||'-'}</td><td>${esc(e.borc)}</td><td>${esc(e.faiz)||'-'}</td><td>${esc(e.dereceSira)||'-'}</td><td>${esc(e.sure)||'-'}</td><td>${esc(e.kurum)||''} ${esc(e.tarih)} ${esc(e.saat||'')} ${e.yevmiye?'· '+esc(e.yevmiye):''}</td></tr></tbody></table>`;
+    let hisse = '';
+    if (e.hisse) { const h = e.hisse;
+      hisse = `<div class="subttl">İpoteğin Konulduğu Hisse Bilgisi</div>
+      <table><thead><tr><th>Taşınmaz</th><th>Hisse Pay/Payda</th><th>Borçlu Malik</th><th>Malik Borç</th><th>Tescil (Tarih/Yevmiye)</th></tr></thead>
+      <tbody><tr><td>${esc(h.tasinmaz)}</td><td>${esc(h.hissePayPayda)||'-'}</td><td>${esc(h.borcluMalik)}</td><td>${esc(h.malikBorc)}</td><td>${esc(h.kurum)||''} ${esc(h.tarih)} ${esc(h.saat||'')} ${h.yevmiye?'· '+esc(h.yevmiye):''}</td></tr></tbody></table>`;
+    }
+    let rehin = '';
+    if (e.rehinSerh && e.rehinSerh.length) {
+      const rows = e.rehinSerh.map(r => `<tr><td class="tur"><span class="tag ${r.tur}">${esc(r.tur)}</span></td>
+        <td><div class="acik"><span class="acik-txt">${esc(r.aciklama)}</span><button class="copybtn" title="Kopyala" onclick="copyFrom(this)">⧉</button></div></td>
+        <td>${esc(r.tarih)} ${esc(r.saat||'')}</td><td>${esc(r.yevmiye)||'-'}</td></tr>`).join('');
+      rehin = `<div class="subttl">Rehine Ait Şerh / Beyan Bilgisi</div><table><thead><tr><th>Tür</th><th>Açıklama</th><th>Tarih</th><th>Yevmiye</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    const std = ipotekStandart(e);
+    const head = `<div class="ipotek-head"><span class="ipotek-no">İpotek ${i+1}</span>
+      <span class="acik-txt std-txt">${esc(std)}</span>
+      <button class="copybtn wide" title="Standart ipotek metnini kopyala" onclick="copyFrom(this)">⧉ Standart metni kopyala</button></div>`;
+    return `<div class="ipotek-card">${head}${ozet}${hisse}${rehin}</div>`;
+  }).join('');
+}
+function rawBlock(ham){
+  if(!ham) return '';
+  const parts = [];
+  if(ham.tasinmazSerh) parts.push(['Taşınmaz Şerh/Beyan ham metni', ham.tasinmazSerh]);
+  if(ham.mulkiyet) parts.push(['Mülkiyet ham metni', ham.mulkiyet]);
+  if(ham.mulkiyetSerh) parts.push(['Mülkiyet Şerh/Beyan ham metni', ham.mulkiyetSerh]);
+  if(ham.rehin) parts.push(['Rehin/İpotek ham metni', ham.rehin]);
+  if(!parts.length) return '';
+  return parts.map(([t,c]) => `<details class="raw"><summary>${t}</summary><pre>${esc(c)}</pre></details>`).join('');
+}
+
+// ---------- Ana render ----------
+function renderCurrent(){
+  const item = history.find(h => h.id === currentId);
+  if(!item){
+    currentEl.innerHTML = `<div class="placeholder"><div class="big">📂</div><p>Henüz belge yok.<br>Bir PDF yükleyin veya soldaki geçmişten seçin.</p></div>`;
+    return;
+  }
+  const v = item.veri;
+  const rapor = raporMetni(v);
+  currentEl.innerHTML = `
+    <div class="doc-title">📄 ${esc(item.dosyaAdi)}</div>
+    <div class="doc-sub">${item.sayfaSayisi||''} sayfa · ${esc(v.tapuKayit.ilIlce||'')} · ${esc(v.tapuKayit.mahalleKoy||'')} · Ada/Parsel ${esc(v.tapuKayit.adaParsel||'-')} · işlendi: ${esc(item.eklenme||'')}</div>
+
+    <div class="rapor">
+      <div class="rapor-head"><span class="t">📋 Rapora Hazır Metin (Tapu Takyidat)</span>
+        <button class="copybtn wide" onclick="copyRapor(this)">⧉ Raporu Kopyala</button></div>
+      <textarea id="raporText" spellcheck="false">${esc(rapor)}</textarea>
+    </div>
+
+    <div class="section"><h3>Tapu Kayıt Bilgisi</h3>${kvBlock(v.tapuKayit, KAYIT_LABELS)}</div>
+    <div class="section"><h3>Taşınmaza Ait Şerh / Beyan / İrtifak</h3>${serhTable(v.tasinmazSerhBeyan)}</div>
+    <div class="section"><h3>Mülkiyet (Malik) Bilgileri</h3>${mulkiyetTable(v.mulkiyet)}</div>
+    <div class="section"><h3>Mülkiyete Ait Şerh / Beyan (Haciz vb.)</h3>${serhTable(v.mulkiyetSerhBeyan)}</div>
+    <div class="section"><h3>İpotek / Rehin Bilgileri</h3>${ipotekTable(v.ipotekler)}</div>
+    <div class="section"><h3>Ham Metin (doğrulama için)</h3>${rawBlock(v.hamMetin)}</div>`;
+  window.scrollTo(0,0);
+}
+
+function renderSidebar(){
+  document.getElementById('histCnt').textContent = history.length ? `(${history.length})` : '';
+  if(!history.length){ histListEl.innerHTML = '<div class="side-empty">Geçmiş boş. İşlenen belgeler burada kalıcı olarak saklanır.</div>'; return; }
+  histListEl.innerHTML = history.map(h => {
+    const t = h.veri.tapuKayit;
+    return `<div class="hist-item ${h.id===currentId?'active':''}" onclick="selectHist('${h.id}')">
+      <div class="hn">${esc(h.dosyaAdi)}</div>
+      <div class="hm">${esc(t.ilIlce||'')} · A/P ${esc(t.adaParsel||'-')} · ${esc(h.eklenme||'')}</div>
+      <span class="hx" title="Sil" onclick="event.stopPropagation();delHist('${h.id}')">✕</span>
+    </div>`;
+  }).join('');
+}
+function selectHist(id){ currentId = id; renderSidebar(); renderCurrent(); }
+function delHist(id){
+  history = history.filter(h => h.id !== id);
+  if(currentId === id) currentId = history.length ? history[0].id : null;
+  saveHistory(); renderSidebar(); renderCurrent();
+}
+
+// ---------- Kopyalama ----------
+function flash(btn, txt){ const o = btn.textContent; btn.textContent = txt||'✓'; btn.classList.add('ok'); setTimeout(()=>{ btn.textContent = o; btn.classList.remove('ok'); }, 1300); }
+function doCopy(text, btn, okText){
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(()=>flash(btn,okText)).catch(()=>fb());
+  else fb();
+  function fb(){ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');flash(btn,okText);}catch(e){} document.body.removeChild(ta); }
+}
+function copyFrom(btn){ doCopy(btn.previousElementSibling.textContent, btn); }
+function copyRapor(btn){ doCopy(document.getElementById('raporText').value, btn, '✓ Kopyalandı'); }
+
+// ---------- Export ----------
+document.getElementById('btnClearHist').onclick = () => {
+  if(!history.length) return;
+  if(confirm('Tüm geçmiş silinsin mi? Bu işlem geri alınamaz.')){ history = []; currentId = null; saveHistory(); renderSidebar(); renderCurrent(); }
+};
+document.getElementById('btnJson').onclick = () => {
+  if(!history.length) return alert('Geçmiş boş.');
+  download('takbis-gecmis.json', JSON.stringify(history, null, 2), 'application/json');
+};
+document.getElementById('btnExcel').onclick = () => {
+  if(!history.length) return alert('Geçmiş boş.');
+  const head = ['Dosya','İl/İlçe','Mahalle','Ada/Parsel','Zemin Tipi','Nitelik','Arsa Pay/Payda','Malik(ler)','Taşınmaz Şerh','Mülkiyet Şerh','İpotek Sayısı','İpotek Detayı'];
+  const rows = [head];
+  history.forEach(h => {
+    const v = h.veri, t = v.tapuKayit;
+    const malikler = (v.mulkiyet||[]).map(m=>`${m.adSoyad||m.malik} (${m.hisse||''})`).join(' | ');
+    const ipotek = (v.ipotekler||[]).map(p=>ipotekStandart(p)).join(' | ');
+    rows.push([h.dosyaAdi, t.ilIlce||'', t.mahalleKoy||'', t.adaParsel||'', t.zeminTipi||'', t.bbNitelik||'', t.arsaPayPayda||'',
+      malikler, (v.tasinmazSerhBeyan||[]).length, (v.mulkiyetSerhBeyan||[]).length, (v.ipotekler||[]).length, ipotek]);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c==null?'':c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  download('takbis-ozet.csv', '﻿'+csv, 'text/csv;charset=utf-8');
+};
+function download(name, content, type){
+  const blob = new Blob([content], {type});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ---------- İlk yükleme ----------
+renderSidebar();
+renderCurrent();
+</script>
+</body>
+</html>
