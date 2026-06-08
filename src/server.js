@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { parseTakbis } from './parser.js';
+import { recordVisit, recordParse, renderStatsPage } from './stats.js';
 
 // pdf-parse CommonJS olduğu için require ile yüklüyoruz
 const require = createRequire(import.meta.url);
@@ -12,6 +13,13 @@ const pdfParse = require('pdf-parse');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Gerçek ziyaretçi IP'si için (Dokploy/Traefik arkasında X-Forwarded-For)
+app.set('trust proxy', true);
+
+// İstatistik panosu kimlik bilgileri (Dokploy'da ortam değişkeniyle değiştirilebilir)
+const STATS_USER = process.env.STATS_USER || 'procodertr';
+const STATS_PASS = process.env.STATS_PASS || '25468546';
 
 // Bellekte tut (diske yazma yok), 25MB sınır, sadece PDF
 const upload = multer({
@@ -24,6 +32,28 @@ const upload = multer({
       cb(new Error('Sadece PDF dosyaları kabul edilir'));
     }
   },
+});
+
+// Ana sayfa ziyaretini say (statik servisten önce), sonra index.html'i sun
+app.get('/', (req, res, next) => {
+  try { recordVisit(req.ip); } catch { /* yoksay */ }
+  next();
+});
+
+// Basic Auth ile korunan özel istatistik panosu
+function statsAuth(req, res, next) {
+  const hdr = req.headers.authorization || '';
+  const [type, b64] = hdr.split(' ');
+  if (type === 'Basic' && b64) {
+    const [u, p] = Buffer.from(b64, 'base64').toString().split(':');
+    if (u === STATS_USER && p === STATS_PASS) return next();
+  }
+  res.set('WWW-Authenticate', 'Basic realm="TAKBIS Stats"');
+  return res.status(401).send('Yetkilendirme gerekli');
+}
+app.get('/stats', statsAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.send(renderStatsPage());
 });
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -54,6 +84,7 @@ app.post('/api/parse', upload.array('files', 50), async (req, res) => {
     }
   }
 
+  try { recordParse(results.filter((r) => r.basarili).length); } catch { /* yoksay */ }
   res.json({ adet: results.length, sonuclar: results });
 });
 
