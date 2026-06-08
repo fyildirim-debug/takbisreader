@@ -2,6 +2,9 @@ node_modules/
 npm-debug.log*
 *.log
 
+# İstatistik veri dosyası (çalışma zamanında oluşur)
+data/
+
 # Örnek/test TAKBIS PDF'leri — KİŞİSEL VERİ içerir, repoya EKLENMEZ
 ornek/
 ornek ipotekli/
