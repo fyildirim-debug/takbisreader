@@ -1,0 +1,15 @@
+node_modules/
+npm-debug.log*
+*.log
+
+# Örnek/test TAKBIS PDF'leri — KİŞİSEL VERİ içerir, repoya EKLENMEZ
+ornek/
+ornek ipotekli/
+test 2/
+*.pdf
+
+# OS / editör
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

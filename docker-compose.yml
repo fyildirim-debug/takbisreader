@@ -1,0 +1,16 @@
+# Dokploy "Compose" dağıtımı için.
+# Dokploy, Traefik üzerinden takbis.arnexlab.com alan adını bu servise yönlendirir.
+# (Domain & SSL ayarını Dokploy arayüzünden yapın; port 3000.)
+services:
+  takbis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+    expose:
+      - "3000"
+    # Dokploy dışında, doğrudan denemek için yorum satırını açın:
+    # ports:
+    #   - "3000:3000"
