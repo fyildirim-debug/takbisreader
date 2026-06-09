@@ -16,3 +16,6 @@ test 2/
 Thumbs.db
 .vscode/
 .idea/
+
+# Serena MCP araç metadata'sı
+.serena/
