@@ -166,6 +166,18 @@
   @keyframes spin { to { transform: rotate(360deg);} }
   .placeholder { text-align:center; color:var(--muted); margin-top:60px; font-size:14px; }
   .placeholder .big { font-size:46px; }
+  /* Konum & parsel bölümü */
+  #parselMap { height:320px; border-radius:10px; border:1px solid var(--line); margin-top:12px; background:#0b1322; z-index:1; }
+  .ok-badge { color:var(--green); font-weight:700; font-size:12px; margin-left:8px; }
+  .warn-badge { color:var(--amber); font-weight:700; font-size:12px; margin-left:8px; }
+  .konum-links { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .konum-links a { color:var(--accent); text-decoration:none; font-size:12.5px; border:1px solid var(--line); padding:5px 12px; border-radius:7px; }
+  .konum-links a:hover { border-color:var(--accent); }
+  .poi-list { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .poi-chip { background:#16233a; border:1px solid var(--line); border-radius:99px; padding:4px 12px; font-size:12px; color:#cbd5e1; }
+  .poi-chip .m { color:var(--accent); font-weight:700; }
+  .cevre-box { margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); }
+
   .seo-box { margin-top:46px; padding:18px 22px; background:#0c1626; border:1px solid #1c2940; border-radius:12px; color:#7c8aa0; font-size:12.5px; line-height:1.75; }
   .seo-box h2 { font-size:14px; color:#94a3b8; margin:0 0 10px; }
   .seo-box strong { color:#a8b8cc; font-weight:600; }
@@ -707,6 +719,173 @@ currentEl.addEventListener('input', e => {
   edSaveTimer = setTimeout(() => { edSaveTimer = null; saveEditors(); }, 600);
 });
 
+// ---------- Konum & Parsel (TKGM + OSM) ----------
+function trAlanParse(s){ // "4.288,52" / "62,09" / "62.09" -> sayı
+  s = String(s||'').trim();
+  if (/,\d{1,2}$/.test(s)) return parseFloat(s.replace(/\./g,'').replace(',','.'));
+  return parseFloat(s.replace(/,/g,''));
+}
+
+function konumBodyHtml(item){
+  if (item.konum) return konumHtml(item);
+  if (item.konumHata) return `<div class="empty">Konum alınamadı: ${esc(item.konumHata)}
+    <button class="copybtn wide" style="margin-left:8px" onclick="retryKonum()">↻ Tekrar dene</button></div>`;
+  return `<div class="empty">⏳ TKGM'den parsel bilgisi alınıyor…</div>`;
+}
+
+function konumHtml(item){
+  const k = item.konum, t = item.veri.tapuKayit;
+  // Yüzölçüm çapraz doğrulama
+  let check = '';
+  const ta = trAlanParse(t.atYuzolcum), ka = trAlanParse(k.alan);
+  if (ta && ka){
+    const fark = Math.abs(ta-ka)/Math.max(ta,ka);
+    check = fark < 0.005
+      ? `<span class="ok-badge">✓ TAKBIS ile uyumlu</span>`
+      : `<span class="warn-badge">⚠ TAKBIS: ${esc(t.atYuzolcum)} m² — uyuşmuyor, belgeyi kontrol edin!</span>`;
+  }
+  const koor = k.merkez ? `${k.merkez.lat}, ${k.merkez.lon}` : '';
+  const rows = [
+    ['Pafta No', esc(k.pafta)||'-'],
+    ['TKGM Yüzölçüm', (esc(k.alan)||'-') + ' m² ' + check],
+    ['TKGM Nitelik', esc(k.nitelik)||'-'],
+    ['Zemin Durumu', esc(k.zeminKmdurum)||'-'],
+    koor ? ['Koordinat', `<span id="koorTxt">${koor}</span> <button class="copybtn" style="vertical-align:middle" title="Koordinatı kopyala" onclick="doCopy('${koor}', this)">⧉</button>`] : null,
+    k.adres && k.adres.adres ? ['Adres (OSM)', esc(k.adres.adres)] : null,
+  ].filter(Boolean);
+  const kv = `<div class="kv">${rows.map(([a,b])=>`<div class="row"><span class="k">${a}</span><span class="v">${b}</span></div>`).join('')}</div>`;
+  const links = k.merkez ? `<div class="konum-links">
+    <a href="https://maps.google.com/?q=${k.merkez.lat},${k.merkez.lon}" target="_blank" rel="noopener">🗺 Google Maps</a>
+    <a href="https://parselsorgu.tkgm.gov.tr" target="_blank" rel="noopener">🏛 TKGM Parsel Sorgu</a>
+  </div>` : '';
+  const harita = k.merkez ? `<div id="parselMap"></div>` : '';
+
+  let cevre = '';
+  if (k.merkez){
+    if (item.cevre && item.cevre.length){
+      const chips = item.cevre.map(p=>`<span class="poi-chip">${esc(p.tur)}${p.ad?' · '+esc(p.ad):''} <span class="m">~${p.mesafe} m</span></span>`).join('');
+      cevre = `<div class="cevre-box"><b style="font-size:13px">🏘 Yakın Çevre (OSM)</b>
+        <div class="poi-list">${chips}</div>
+        <div class="konum-links"><a href="#" onclick="ekleBolge(event)">✚ Bölge Özellikleri'ne metin olarak ekle</a></div></div>`;
+    } else if (item.cevre) {
+      cevre = `<div class="cevre-box empty">Yakın çevrede kayıtlı nokta bulunamadı (OSM verisi eksik olabilir).</div>`;
+    } else {
+      cevre = `<div class="cevre-box"><button class="copybtn wide" onclick="getirCevre(this)">🏘 Çevre analizini getir (okul, hastane, market…)</button></div>`;
+    }
+  }
+  return kv + links + harita + cevre;
+}
+
+async function fetchKonum(item){
+  const t = item.veri.tapuKayit;
+  const [il, ilce] = String(t.ilIlce||'').split('/');
+  const [ada, parsel] = String(t.adaParsel||'').split('/');
+  if (!il || !ilce || !ada || !parsel){
+    item.konumHata = 'Belgede il/ilçe veya ada/parsel bilgisi eksik';
+    saveHistory(); refreshKonum(item); return;
+  }
+  try {
+    const r = await fetch('/api/konum?' + new URLSearchParams({ il, ilce, mahalle: t.mahalleKoy||'', ada, parsel }));
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    // localStorage şişmesin: çok büyük geometrileri saklama
+    if (j.geometry && JSON.stringify(j.geometry).length > 20000) delete j.geometry;
+    item.konum = j; delete item.konumHata;
+  } catch(e){
+    item.konumHata = e.message;
+  }
+  saveHistory();
+  if (item.id === currentId) refreshKonum(item);
+}
+
+function refreshKonum(item){
+  const el = document.getElementById('konumBody');
+  if (!el) return;
+  el.innerHTML = konumBodyHtml(item);
+  if (item.konum) drawKonum(item);
+}
+
+function setupKonum(item){
+  if (item.konum) drawKonum(item);
+  else if (!item.konumHata) fetchKonum(item);
+}
+
+function retryKonum(){
+  const item = history.find(h => h.id === currentId);
+  if (!item) return;
+  delete item.konumHata;
+  refreshKonum(item);
+  fetchKonum(item);
+}
+
+function loadLeaflet(cb){
+  if (window.L) return cb();
+  if (loadLeaflet._loading){ loadLeaflet._q.push(cb); return; }
+  loadLeaflet._loading = true; loadLeaflet._q = [cb];
+  const css = document.createElement('link');
+  css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+  document.head.appendChild(css);
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  s.onload = () => loadLeaflet._q.forEach(f => f());
+  document.body.appendChild(s);
+}
+
+function drawKonum(item){
+  const k = item.konum;
+  if (!k || !k.merkez) return;
+  loadLeaflet(() => {
+    const el = document.getElementById('parselMap');
+    if (!el || el.dataset.done) return;
+    el.dataset.done = '1';
+    const m = L.map(el).setView([k.merkez.lat, k.merkez.lon], 17);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m);
+    if (k.geometry){
+      const g = L.geoJSON(k.geometry, { style: { color:'#0ea5e9', weight:2, fillColor:'#38bdf8', fillOpacity:.15 } }).addTo(m);
+      try { m.fitBounds(g.getBounds().pad(0.3)); } catch(e){}
+    }
+    L.marker([k.merkez.lat, k.merkez.lon]).addTo(m);
+    setTimeout(() => m.invalidateSize(), 250);
+  });
+}
+
+async function getirCevre(btn){
+  const item = history.find(h => h.id === currentId);
+  if (!item || !item.konum?.merkez) return;
+  btn.textContent = '⏳ Analiz ediliyor… (10-30 sn sürebilir)'; btn.disabled = true;
+  try {
+    const r = await fetch(`/api/cevre?lat=${item.konum.merkez.lat}&lon=${item.konum.merkez.lon}`);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    item.cevre = j.pois || [];
+    saveHistory(); refreshKonum(item);
+  } catch(e){
+    btn.textContent = '⚠ Alınamadı — tekrar dene'; btn.disabled = false;
+  }
+}
+
+function cevreParagraf(item){
+  const l = item.cevre || [];
+  if (!l.length) return '';
+  const parca = l.map(p => `${p.tur.toLocaleLowerCase('tr-TR')}${p.ad ? ' (' + p.ad + ')' : ''} yaklaşık ${p.mesafe} m`).join(', ');
+  return `Taşınmazın yakın çevresinde; ${parca} mesafede bulunmaktadır. Bölgeye toplu taşıma araçları ve özel araçlar ile ulaşım mümkündür.`;
+}
+
+function ekleBolge(ev){
+  ev.preventDefault();
+  const item = history.find(h => h.id === currentId);
+  if (!item) return;
+  const ft = document.getElementById('fillToggle');
+  if (ft && !ft.checked){ ft.checked = true; toggleFill(true); }
+  const ed = currentEl.querySelector('.ed[data-key="bolge"]');
+  if (!ed) return;
+  const div = document.createElement('div');
+  div.textContent = cevreParagraf(item);
+  ed.appendChild(div);
+  saveEditors();
+  ed.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
 // ---------- Ana render ----------
 function renderCurrent(){
   const item = history.find(h => h.id === currentId);
@@ -735,6 +914,7 @@ function renderCurrent(){
     ${editorPanelHtml()}
 
     <div class="section"><h3>Tapu Kayıt Bilgisi</h3>${kvBlock(v.tapuKayit, KAYIT_LABELS)}</div>
+    <div class="section"><h3>📍 Konum &amp; Parsel Bilgisi (TKGM)</h3><div id="konumBody">${konumBodyHtml(item)}</div></div>
     <div class="section"><h3>Taşınmaza Ait Şerh / Beyan / İrtifak</h3>${serhTable(v.tasinmazSerhBeyan)}</div>
     <div class="section"><h3>Mülkiyet (Malik) Bilgileri</h3>${mulkiyetTable(v.mulkiyet)}</div>
     <div class="section"><h3>Mülkiyete Ait Şerh / Beyan (Haciz vb.)</h3>${serhTable(v.mulkiyetSerhBeyan)}</div>
@@ -753,6 +933,7 @@ function renderCurrent(){
   const ep = document.getElementById('editorPanel');
   if (ft) ft.checked = open;
   if (ep) ep.style.display = open ? '' : 'none';
+  setupKonum(item);
   window.scrollTo(0,0);
 }
 
@@ -808,6 +989,11 @@ async function indirWord(btn){
         tapuKayit: item.veri.tapuKayit,
         mulkiyet: item.veri.mulkiyet,
         bolumler: toplaBolumler(),
+        konum: item.konum ? {
+          pafta: item.konum.pafta || '',
+          koordinat: item.konum.merkez ? `${item.konum.merkez.lat}, ${item.konum.merkez.lon}` : '',
+          adres: item.konum.adres?.adres || '',
+        } : undefined,
       }),
     });
     if(!res.ok) throw new Error('Sunucu hatası: ' + res.status);

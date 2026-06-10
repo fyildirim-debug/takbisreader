@@ -155,9 +155,20 @@ function bolumParagraflari(blocks) {
   return out;
 }
 
-export async function olusturRapor({ dosyaAdi, raporMetni, tapuKayit = {}, mulkiyet = [], bolumler = {} }) {
+export async function olusturRapor({ dosyaAdi, raporMetni, tapuKayit = {}, mulkiyet = [], bolumler = {}, konum = null }) {
   const [il = '', ilce = ''] = String(tapuKayit.ilIlce || '').split('/');
   const malikler = mulkiyet.map((m) => `${m.adSoyad || m.malik}${m.hisse ? ` (${m.hisse})` : ''}`).join(', ');
+
+  // TKGM'den gelen konum bilgileri başlık tablosuna eklenir
+  const basRows = [
+    ['Rapor No', raporNo(dosyaAdi)],
+    ['Raporu Hazırlayan Uzman', ''],
+    ['İl', il.trim()],
+    ['İlçe', ilce.trim()],
+  ];
+  if (konum?.pafta) basRows.push(['Pafta No', konum.pafta]);
+  if (konum?.koordinat) basRows.push(['Koordinat (Enlem, Boylam)', konum.koordinat]);
+  if (konum?.adres) basRows.push(['Adres (OSM)', konum.adres]);
 
   const children = [
     new Paragraph({
@@ -165,12 +176,7 @@ export async function olusturRapor({ dosyaAdi, raporMetni, tapuKayit = {}, mulki
       spacing: { after: 240 },
       children: [new TextRun({ text: 'KAT İRTİFAKLI/MÜLKİYETLİ TAŞINMAZ DEĞERLEME RAPORU', bold: true, font: FONT, size: 26 })],
     }),
-    kvTable([
-      ['Rapor No', raporNo(dosyaAdi)],
-      ['Raporu Hazırlayan Uzman', ''],
-      ['İl', il.trim()],
-      ['İlçe', ilce.trim()],
-    ]),
+    kvTable(basRows),
 
     baslik('TAPU KAYIT BİLGİSİ'),
     kvTable([
