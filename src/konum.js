@@ -132,12 +132,30 @@ export async function adresBul(lat, lon) {
 }
 
 // Overpass — yakın çevredeki önemli noktalar (kategori başına en yakını)
-const POI_TR = {
-  school: 'Okul', university: 'Üniversite', hospital: 'Hastane',
-  clinic: 'Sağlık Kuruluşu', pharmacy: 'Eczane', place_of_worship: 'Cami',
-  marketplace: 'Pazar Yeri', supermarket: 'Market', bus_stop: 'Otobüs Durağı',
-  park: 'Park', bank: 'Banka', police: 'Polis Karakolu',
-};
+// Katalog istemcidekiyle aynı anahtarları kullanır (bu uç yalnızca yedek;
+// asıl sorgu kullanıcının tarayıcısından yapılır).
+const KATALOG = [
+  { k: 'okul', l: 'Okul', s: ['amenity=school'], t: (x) => x.amenity === 'school' },
+  { k: 'universite', l: 'Üniversite', s: ['amenity=university'], t: (x) => x.amenity === 'university' },
+  { k: 'hastane', l: 'Hastane', s: ['amenity=hospital'], t: (x) => x.amenity === 'hospital' },
+  { k: 'saglik', l: 'Sağlık Kuruluşu', s: ['amenity=clinic', 'amenity=doctors'], t: (x) => ['clinic', 'doctors'].includes(x.amenity) },
+  { k: 'eczane', l: 'Eczane', s: ['amenity=pharmacy'], t: (x) => x.amenity === 'pharmacy' },
+  { k: 'cami', l: 'Cami', s: ['amenity=place_of_worship'], t: (x) => x.amenity === 'place_of_worship' && (!x.religion || x.religion === 'muslim') },
+  { k: 'market', l: 'Market', s: ['shop=supermarket'], t: (x) => x.shop === 'supermarket' },
+  { k: 'avm', l: 'AVM', s: ['shop=mall'], t: (x) => x.shop === 'mall' },
+  { k: 'pazar', l: 'Pazar Yeri', s: ['amenity=marketplace'], t: (x) => x.amenity === 'marketplace' },
+  { k: 'durak', l: 'Otobüs Durağı', s: ['highway=bus_stop'], t: (x) => x.highway === 'bus_stop' },
+  { k: 'rayli', l: 'Metro/Tramvay', s: ['railway=station', 'railway=tram_stop'], t: (x) => ['station', 'tram_stop'].includes(x.railway) },
+  { k: 'park', l: 'Park', s: ['leisure=park'], t: (x) => x.leisure === 'park' },
+  { k: 'banka', l: 'Banka', s: ['amenity=bank'], t: (x) => x.amenity === 'bank' },
+  { k: 'atm', l: 'ATM', s: ['amenity=atm'], t: (x) => x.amenity === 'atm' },
+  { k: 'polis', l: 'Polis', s: ['amenity=police'], t: (x) => x.amenity === 'police' },
+  { k: 'yakit', l: 'Benzin İstasyonu', s: ['amenity=fuel'], t: (x) => x.amenity === 'fuel' },
+  { k: 'restoran', l: 'Restoran', s: ['amenity=restaurant'], t: (x) => x.amenity === 'restaurant' },
+  { k: 'kafe', l: 'Kafe', s: ['amenity=cafe'], t: (x) => x.amenity === 'cafe' },
+  { k: 'spor', l: 'Spor Tesisi', s: ['leisure=sports_centre', 'leisure=fitness_centre'], t: (x) => ['sports_centre', 'fitness_centre'].includes(x.leisure) },
+  { k: 'postane', l: 'PTT/Postane', s: ['amenity=post_office'], t: (x) => x.amenity === 'post_office' },
+];
 
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371000;
@@ -148,17 +166,16 @@ function haversine(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-export async function cevreAnaliz(lat, lon) {
-  const key = `c|${(+lat).toFixed(4)}|${(+lon).toFixed(4)}`;
+export async function cevreAnaliz(lat, lon, keys = [], radius = 1500) {
+  radius = Math.min(Math.max(parseInt(radius, 10) || 1500, 200), 3000);
+  const cats = KATALOG.filter((c) => !keys.length || keys.includes(c.k));
+  if (!cats.length) return [];
+  const key = `c|${(+lat).toFixed(4)}|${(+lon).toFixed(4)}|${radius}|${cats.map((c) => c.k).join(',')}`;
   const hit = cGet(key);
   if (hit) return hit;
 
-  const q = `[out:json][timeout:25];(
-node(around:1500,${lat},${lon})[amenity~"school|university|hospital|clinic|pharmacy|place_of_worship|marketplace|bank|police"];
-node(around:1500,${lat},${lon})[shop=supermarket];
-node(around:1500,${lat},${lon})[highway=bus_stop];
-way(around:1500,${lat},${lon})[leisure=park];
-);out center 80;`;
+  const sels = cats.flatMap((c) => c.s.map((s) => `nwr(around:${radius},${lat},${lon})[${s}];`)).join('\n');
+  const q = `[out:json][timeout:25];(\n${sels}\n);out center 120;`;
 
   // POST + yedek aynalar (ana sunucu yoğun olduğunda 502 dönebiliyor)
   const MIRRORS = [
@@ -194,12 +211,11 @@ way(around:1500,${lat},${lon})[leisure=park];
     const elon = el.lon ?? el.center?.lon;
     if (elat == null) continue;
     const tags = el.tags || {};
-    const cat = tags.amenity || tags.shop || tags.highway || tags.leisure;
-    if (!POI_TR[cat]) continue;
-    if (cat === 'place_of_worship' && tags.religion && tags.religion !== 'muslim') continue;
+    const cat = cats.find((c) => c.t(tags));
+    if (!cat) continue;
     const d = haversine(+lat, +lon, elat, elon);
-    if (!best[cat] || d < best[cat].mesafe) {
-      best[cat] = { tur: POI_TR[cat], ad: tags.name || '', mesafe: Math.round(d) };
+    if (!best[cat.k] || d < best[cat.k].mesafe) {
+      best[cat.k] = { tur: cat.l, ad: tags.name || '', mesafe: Math.round(d) };
     }
   }
   const list = Object.values(best).sort((a, b) => a.mesafe - b.mesafe);

@@ -125,8 +125,9 @@ app.get('/api/cevre', async (req, res) => {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return res.status(400).json({ error: 'Geçersiz koordinat' });
   }
+  const keys = String(req.query.kat || '').split(',').map((s) => s.trim()).filter(Boolean);
   try {
-    const pois = await cevreAnaliz(lat, lon);
+    const pois = await cevreAnaliz(lat, lon, keys, req.query.r);
     res.json({ pois });
   } catch (err) {
     res.status(502).json({ error: err.message });
