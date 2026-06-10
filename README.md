@@ -28,6 +28,10 @@ Yüklediğiniz PDF'ler ve çıkarılan bilgiler **sunucuda saklanmaz**. PDF'ler 
 işlenir, diske yazılmaz. Geçmiş yalnızca **kullandığınız cihazın tarayıcı önbelleğinde**
 (`localStorage`) tutulur; tarayıcıdan silindiğinde kaybolur.
 
+Yasal saklama yükümlülüğü (KVKK / 5651 sayılı Kanun) kapsamında **erişim kayıtları**
+(IP adresi, tarih-saat, tarayıcı bilgisi, yapılan işlem) `data/access.jsonl` dosyasında
+tutulur. Sağlık kontrolü (`/healthz`) ve bot/izleme istekleri ziyaret sayılmaz.
+
 ## 🚀 Yerel çalıştırma
 
 ```bash
