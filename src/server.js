@@ -149,7 +149,7 @@ app.post('/api/uavt', express.json({ limit: '256kb' }), async (req, res) => {
     .slice(0, 32);
   if (!points.length) return res.status(400).json({ error: 'Geçersiz koordinat' });
   try {
-    const liste = await uavtSorgu(points);
+    const liste = await uavtSorgu(points, !!(req.body && req.body.nocache));
     res.json({ liste });
   } catch (err) {
     res.status(502).json({ error: err.message });
