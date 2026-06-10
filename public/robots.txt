@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /stats
+Disallow: /api/
+
+Sitemap: https://takbis.arnexlab.com/sitemap.xml
