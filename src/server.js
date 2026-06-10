@@ -57,7 +57,7 @@ function statsAuth(req, res, next) {
 }
 app.get('/stats', statsAuth, (req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.send(renderStatsPage());
+  res.send(renderStatsPage(req.query));
 });
 
 app.use(express.static(path.join(__dirname, '..', 'public')));

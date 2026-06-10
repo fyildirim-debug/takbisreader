@@ -4,12 +4,11 @@
  * - PDF içerikleri / takyidat verileri SAKLANMAZ.
  * - Yasal saklama yükümlülüğü (KVKK / 5651) kapsamında erişim kayıtları
  *   tutulur: IP adresi, tarih-saat, tarayıcı (User-Agent), yapılan işlem.
- *   Kayıtlar DATA_DIR/access.jsonl dosyasına eklenir; sayaçlar
- *   DATA_DIR/stats.json'da tutulur. Kalıcılık için Dokploy'da /app/data
- *   dizinine volume bağlayın.
- * - Sağlık kontrolü (/healthz) ve bot/monitör istekleri ziyaret SAYILMAZ
- *   (kendi kendine artan sayaç sorununu önler); bunlar yalnızca erişim
- *   kaydına "bot" olarak düşülür.
+ *   Kayıtlar DATA_DIR/access.jsonl dosyasına eklenir (binlerce kayıt destekler);
+ *   sayaçlar DATA_DIR/stats.json'da tutulur. Kalıcılık için Dokploy'da
+ *   /app/data dizinine volume bağlayın.
+ * - Sağlık kontrolü (/healthz) ve bot/monitör istekleri ziyaret SAYILMAZ.
+ * - Yönetici panelinde listeler sayfa başına 50 kayıt olarak sayfalanır.
  */
 import fs from 'fs';
 import path from 'path';
@@ -17,6 +16,7 @@ import path from 'path';
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 const STATS_FILE = path.join(DATA_DIR, 'stats.json');
 const ACCESS_FILE = path.join(DATA_DIR, 'access.jsonl');
+const SAYFA_BOYU = 50;
 
 function emptyStats() {
   return {
@@ -137,17 +137,13 @@ export function uaToText(ua = '') {
   return b + (os ? ' · ' + os : '') + mob;
 }
 
-// Erişim kaydının son N satırını oku (en yeni başta)
-function accessTail(n = 100) {
+// Erişim kaydının tamamını oku (en yeni başta). Güvenlik tavanı: son 100k satır.
+function accessAll(limit = 100000) {
   try {
-    const st = fs.statSync(ACCESS_FILE);
-    const size = Math.min(st.size, 512 * 1024); // en fazla son 512KB
-    const fd = fs.openSync(ACCESS_FILE, 'r');
-    const buf = Buffer.alloc(size);
-    fs.readSync(fd, buf, 0, size, st.size - size);
-    fs.closeSync(fd);
-    const lines = buf.toString('utf8').split('\n').filter(Boolean);
-    return lines.slice(-n).reverse().map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    const lines = fs.readFileSync(ACCESS_FILE, 'utf8').split('\n').filter(Boolean);
+    return lines.slice(-limit).reverse()
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(Boolean);
   } catch {
     return [];
   }
@@ -166,14 +162,16 @@ function lastNDays(n) {
 }
 
 export function snapshot() {
-  const visitors = Object.entries(stats.visitors).map(([ip, v]) => ({ ip, ...v }));
+  const visitorCount = Object.keys(stats.visitors).length;
+  let returning = 0;
+  for (const v of Object.values(stats.visitors)) if (v.count > 1) returning++;
   const days14 = lastNDays(14);
   const last7 = lastNDays(7).reduce((s, d) => s + d.visits, 0);
   const today = stats.daily[dayKey()] || { visits: 0, parsed: 0, uniq: 0 };
   return {
     totalVisits: stats.totalVisits,
-    uniqueVisitors: visitors.length,
-    returningVisitors: visitors.filter((v) => v.count > 1).length,
+    uniqueVisitors: visitorCount,
+    returningVisitors: returning,
     totalParsed: stats.totalParsed,
     parseRequests: stats.parseRequests,
     botHits: stats.botHits || 0,
@@ -184,13 +182,11 @@ export function snapshot() {
     todayParsed: today.parsed,
     last7Visits: last7,
     daily: days14,
-    visitorList: visitors.sort((a, b) => String(b.last).localeCompare(String(a.last))).slice(0, 100),
-    sonKayitlar: accessTail(100),
   };
 }
 
 // ---------------------------------------------------------------------------
-// İstatistik sayfası (HTML)
+// İstatistik sayfası (HTML) — sayfalamalı listeler
 // ---------------------------------------------------------------------------
 function fmtDate(iso) {
   if (!iso) return '—';
@@ -198,8 +194,53 @@ function fmtDate(iso) {
 }
 function escH(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
-export function renderStatsPage() {
+function clampPage(p, pages) {
+  p = parseInt(p, 10);
+  if (!Number.isFinite(p) || p < 1) p = 1;
+  return Math.min(p, pages);
+}
+
+// « ‹ 1 … 4 5 6 … 99 › » biçiminde sayfalama bağlantıları
+function pagerHtml(page, pages, hrefFor) {
+  if (pages <= 1) return '';
+  const parts = [];
+  const add = (p, label, cur) => parts.push(
+    cur ? `<span class="cur">${label}</span>` : `<a href="${hrefFor(p)}">${label}</a>`
+  );
+  if (page > 1) add(page - 1, '‹ Önceki', false);
+  const around = [...new Set(
+    [1, 2, page - 1, page, page + 1, pages - 1, pages].filter((p) => p >= 1 && p <= pages)
+  )].sort((a, b) => a - b);
+  let last = 0;
+  for (const p of around) {
+    if (p - last > 1) parts.push('<span class="dots">…</span>');
+    add(p, String(p), p === page);
+    last = p;
+  }
+  if (page < pages) add(page + 1, 'Sonraki ›', false);
+  return `<div class="pager">${parts.join('')}</div>`;
+}
+
+export function renderStatsPage(query = {}) {
   const s = snapshot();
+
+  // --- Ziyaretçi listesi (IP bazında), sayfalı ---
+  const allVisitors = Object.entries(stats.visitors)
+    .map(([ip, v]) => ({ ip, ...v }))
+    .sort((a, b) => String(b.last).localeCompare(String(a.last)));
+  const vPages = Math.max(1, Math.ceil(allVisitors.length / SAYFA_BOYU));
+  const vp = clampPage(query.vp, vPages);
+  const visitorsPage = allVisitors.slice((vp - 1) * SAYFA_BOYU, vp * SAYFA_BOYU);
+
+  // --- Erişim kayıtları, sayfalı ---
+  const allLogs = accessAll();
+  const lPages = Math.max(1, Math.ceil(allLogs.length / SAYFA_BOYU));
+  const lp = clampPage(query.lp, lPages);
+  const logsPage = allLogs.slice((lp - 1) * SAYFA_BOYU, lp * SAYFA_BOYU);
+
+  const vHref = (p) => `/stats?vp=${p}&lp=${lp}#ips`;
+  const lHref = (p) => `/stats?vp=${vp}&lp=${p}#log`;
+
   const maxV = Math.max(1, ...s.daily.map((d) => d.visits));
   const bars = s.daily.map((d) => {
     const h = Math.round((d.visits / maxV) * 100);
@@ -210,13 +251,13 @@ export function renderStatsPage() {
   const card = (label, value, sub) =>
     `<div class="card"><div class="cv">${value}</div><div class="cl">${label}</div>${sub ? `<div class="cs">${sub}</div>` : ''}</div>`;
 
-  const visitorRows = s.visitorList.map((v) => `<tr>
+  const visitorRows = visitorsPage.map((v) => `<tr>
     <td class="mono">${escH(v.ip)}</td><td>${v.count}</td>
     <td>${fmtDate(v.first)}</td><td>${fmtDate(v.last)}</td>
     <td>${escH(uaToText(v.ua))}</td></tr>`).join('') ||
     '<tr><td colspan="5" class="dim">Kayıt yok</td></tr>';
 
-  const logRows = s.sonKayitlar.map((k) => {
+  const logRows = logsPage.map((k) => {
     const tip = k.tip === 'pdf'
       ? `PDF İşleme (${k.adet || 1})${k.dosyalar?.length ? ': ' + escH(k.dosyalar.join(', ')) : ''}`
       : k.tip === 'bot' ? 'Bot/İzleme' : 'Ziyaret';
@@ -228,6 +269,7 @@ export function renderStatsPage() {
   return `<!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="robots" content="noindex, nofollow"/>
 <title>TAKBIS — İstatistikler</title>
 <style>
   :root{--bg:#0f172a;--card:#1e293b;--card2:#273449;--line:#334155;--txt:#e2e8f0;--muted:#94a3b8;--accent:#38bdf8;--green:#22c55e;--amber:#f59e0b;--pink:#f0abfc;}
@@ -242,6 +284,7 @@ export function renderStatsPage() {
   .card .cs{color:#64748b;font-size:11px;margin-top:3px;}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:22px;}
   .panel h2{font-size:14px;margin:0 0 14px;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;}
+  .panel h2 .meta{color:#64748b;font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;}
   .chart{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:18px;}
   .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
   .bfill{width:70%;max-width:34px;background:linear-gradient(180deg,var(--accent),#0ea5e9);border-radius:5px 5px 0 0;min-height:2px;}
@@ -258,7 +301,11 @@ export function renderStatsPage() {
   .top{display:flex;gap:10px;align-items:center;margin-bottom:18px;}
   .top a{margin-left:auto;color:var(--accent);text-decoration:none;font-size:13px;border:1px solid var(--line);padding:6px 12px;border-radius:7px;}
   .top a:hover{border-color:var(--accent);}
-  .scroll{max-height:420px;overflow:auto;border-radius:8px;}
+  .pager{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:14px;align-items:center;}
+  .pager a,.pager .cur{min-width:34px;text-align:center;padding:6px 10px;border-radius:7px;border:1px solid var(--line);color:var(--txt);text-decoration:none;font-size:12.5px;}
+  .pager a:hover{border-color:var(--accent);color:var(--accent);}
+  .pager .cur{background:var(--accent);color:#04263a;border-color:var(--accent);font-weight:700;}
+  .pager .dots{color:var(--muted);padding:6px 2px;}
 </style></head><body>
 <header><div style="font-size:24px">📊</div><div><h1>TAKBIS İstatistikleri</h1><div class="sub">Yönetici paneli · ${fmtDate(new Date().toISOString())}</div></div></header>
 <div class="wrap">
@@ -273,12 +320,19 @@ export function renderStatsPage() {
     ${card('Bot/İzleme', s.botHits, 'sayılmayan istek')}
   </div>
   <div class="panel"><h2>Son 14 Gün — Günlük Ziyaret</h2><div class="chart">${bars}</div></div>
-  <div class="panel"><h2>👥 Ziyaretçiler (IP Bazında)</h2><div class="scroll">
+
+  <div class="panel" id="ips"><h2>👥 Ziyaretçiler (IP Bazında)
+    <span class="meta">— toplam ${allVisitors.length} IP · sayfa ${vp}/${vPages}</span></h2>
     <table><thead><tr><th>IP Adresi</th><th>Ziyaret</th><th>İlk Giriş</th><th>Son Giriş</th><th>Tarayıcı / Cihaz</th></tr></thead>
-    <tbody>${visitorRows}</tbody></table></div></div>
-  <div class="panel"><h2>🗂️ Erişim Kayıtları — KVKK/5651 (son 100)</h2><div class="scroll">
+    <tbody>${visitorRows}</tbody></table>
+    ${pagerHtml(vp, vPages, vHref)}</div>
+
+  <div class="panel" id="log"><h2>🗂️ Erişim Kayıtları — KVKK/5651
+    <span class="meta">— toplam ${allLogs.length} kayıt · sayfa ${lp}/${lPages}</span></h2>
     <table><thead><tr><th>Tarih · Saat</th><th>IP Adresi</th><th>İşlem</th><th>Tarayıcı / Cihaz</th></tr></thead>
-    <tbody>${logRows}</tbody></table></div></div>
+    <tbody>${logRows}</tbody></table>
+    ${pagerHtml(lp, lPages, lHref)}</div>
+
   <div class="note">🔒 Yüklenen PDF içerikleri ve takyidat verileri sunucuda saklanmaz.<br>
   Erişim kayıtları (IP, tarih-saat, tarayıcı, işlem) yasal saklama yükümlülüğü (KVKK / 5651 sayılı Kanun) kapsamında tutulur.<br>
   Sağlık kontrolü ve bot/izleme istekleri ziyaret sayılarına dahil edilmez.</div>

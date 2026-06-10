@@ -3,7 +3,39 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TAKBIS PDF Ayrıştırıcı</title>
+<title>TAKBIS Okuyucu — Tapu Takyidat PDF Ayrıştırma ve Değerleme Raporu Aracı</title>
+<meta name="description" content="TAKBIS / Web Tapu PDF belgelerini ücretsiz ayrıştırın: tapu kayıt bilgisi, şerh, beyan, irtifak, haciz ve ipotek bilgilerini otomatik çıkarır; gayrimenkul değerleme (ekspertiz) raporuna hazır takyidat metni ve Word raporu üretir." />
+<meta name="keywords" content="takbis, takbis okuma, takbis pdf, tapu takyidat, takyidat belgesi, takyidat sorgulama, şerh beyan irtifak, ipotek sorgulama, haciz sorgulama, tapu kayıt örneği, web tapu, gayrimenkul değerleme, ekspertiz raporu, taşınmaz değerleme, tapu belgesi okuma, değerleme uzmanı araçları" />
+<meta name="robots" content="index, follow" />
+<meta name="author" content="Furkan Yıldırım" />
+<meta name="theme-color" content="#0f172a" />
+<link rel="canonical" href="https://takbis.arnexlab.com/" />
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://takbis.arnexlab.com/" />
+<meta property="og:site_name" content="TAKBIS Okuyucu" />
+<meta property="og:locale" content="tr_TR" />
+<meta property="og:title" content="TAKBIS Okuyucu — Tapu Takyidat PDF Ayrıştırma Aracı" />
+<meta property="og:description" content="TAKBIS PDF'lerinden şerh, beyan, irtifak, haciz ve ipotek bilgilerini saniyeler içinde çıkarın; rapora hazır takyidat metni ve Word değerleme raporu indirin. Ücretsiz." />
+<!-- Twitter -->
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="TAKBIS Okuyucu — Tapu Takyidat PDF Ayrıştırma Aracı" />
+<meta name="twitter:description" content="TAKBIS PDF'lerinden takyidat (şerh, beyan, irtifak, haciz, ipotek) bilgilerini otomatik çıkaran ücretsiz araç. Değerleme raporuna hazır metin ve Word çıktısı." />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "TAKBIS Okuyucu",
+  "alternateName": "TAKBIS PDF Ayrıştırıcı",
+  "url": "https://takbis.arnexlab.com/",
+  "description": "TAKBIS / Web Tapu PDF belgelerinden tapu kayıt, şerh, beyan, irtifak, haciz ve ipotek bilgilerini otomatik çıkaran; gayrimenkul değerleme raporuna hazır takyidat metni ve Word raporu üreten ücretsiz web uygulaması.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "tr",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "TRY" },
+  "author": { "@type": "Person", "name": "Furkan Yıldırım", "url": "https://furkanyildirim.com/" }
+}
+</script>
 <style>
   :root {
     --bg: #0f172a; --card: #1e293b; --card2: #273449; --line: #334155;
@@ -134,7 +166,12 @@
   @keyframes spin { to { transform: rotate(360deg);} }
   .placeholder { text-align:center; color:var(--muted); margin-top:60px; font-size:14px; }
   .placeholder .big { font-size:46px; }
-  .site-foot { margin-top:46px; padding-top:16px; border-top:1px solid var(--line); color:#64748b; font-size:11px; text-align:center; line-height:1.8; }
+  .seo-box { margin-top:46px; padding:18px 22px; background:#0c1626; border:1px solid #1c2940; border-radius:12px; color:#7c8aa0; font-size:12.5px; line-height:1.75; }
+  .seo-box h2 { font-size:14px; color:#94a3b8; margin:0 0 10px; }
+  .seo-box strong { color:#a8b8cc; font-weight:600; }
+  .seo-box ul { margin:8px 0 0 18px; padding:0; }
+  .seo-box li { margin-bottom:3px; }
+  .site-foot { margin-top:26px; padding-top:16px; border-top:1px solid var(--line); color:#64748b; font-size:11px; text-align:center; line-height:1.8; }
   .site-foot b { color:var(--muted); font-weight:600; }
   .site-foot a { color:var(--accent2); text-decoration:none; }
   .site-foot a:hover { color:var(--accent); text-decoration:underline; }
@@ -215,6 +252,23 @@
     </div>
     <div class="loader" id="loader"><div class="spin"></div><span>PDF okunuyor...</span></div>
     <div id="current"></div>
+    <section class="seo-box">
+      <h2>TAKBIS Okuyucu Nedir?</h2>
+      <p><strong>TAKBIS Okuyucu</strong>; Web Tapu / TAKBIS sisteminden alınan <strong>tapu kayıt örneği (takyidat belgesi)</strong> PDF'lerini
+      otomatik olarak ayrıştıran ücretsiz bir araçtır. Belgedeki <strong>tapu kayıt bilgisi</strong> (ada/parsel, yüzölçümü, bağımsız bölüm,
+      arsa payı), <strong>şerh – beyan – irtifak</strong> kayıtları, <strong>icrai ve ihtiyati haciz</strong> bilgileri, <strong>ipotek / rehin</strong>
+      detayları (alacaklı banka, borç, derece, faiz) ve <strong>mülkiyet (malik)</strong> bilgileri saniyeler içinde çıkarılır.</p>
+      <p>Özellikle <strong>gayrimenkul değerleme uzmanları (eksperler)</strong> için tasarlanmıştır: takyidat bölümü,
+      değerleme (ekspertiz) raporuna doğrudan yapıştırılabilecek standart biçimde üretilir; tek tıkla
+      <strong>Word değerleme raporu</strong> iskeleti indirilebilir. Yüklenen PDF içerikleri sunucuda saklanmaz.</p>
+      <ul>
+        <li>TAKBIS PDF okuma ve takyidat çıkarma</li>
+        <li>Şerh, beyan, irtifak ve haciz listesi (tarih ve yevmiye numaralarıyla)</li>
+        <li>İpotek sorgulama: alacaklı, borç tutarı, derece/sıra bilgisi</li>
+        <li>Rapora hazır "Tapu Takyidat Bilgileri" metni ve Word (.docx) çıktısı</li>
+        <li>Gayrimenkul değerleme ve ekspertiz raporu hazırlama yardımcısı</li>
+      </ul>
+    </section>
     <footer class="site-foot">
       🔒 Yüklenen PDF içerikleri ve takyidat verileri sunucuda <b>saklanmaz</b>; geçmişiniz yalnızca cihazınızın tarayıcı önbelleğinde (localStorage) tutulur.<br>
       Yapımcı: <a href="https://furkanyildirim.com/" target="_blank" rel="noopener">Furkan Yıldırım</a>
