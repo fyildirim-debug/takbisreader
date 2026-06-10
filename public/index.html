@@ -91,6 +91,25 @@
   .rapor-head .copybtn.wide:hover { background:var(--accent); }
   .rapor textarea { width:100%; border:0; background:#0c1c2e; color:#e2e8f0; padding:14px 16px; font-family:"Consolas","Courier New",monospace; font-size:12.5px; line-height:1.55; resize:vertical; min-height:280px; outline:none; }
 
+  /* Uzman bölümleri editör paneli */
+  .editor-panel { border:1px solid var(--line); border-radius:12px; background:#101d31; margin-top:18px; overflow:hidden; }
+  .editor-panel .ep-head { display:flex; align-items:center; gap:10px; padding:12px 16px; background:#16263e; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .editor-panel .ep-head .t { font-weight:700; font-size:14px; color:#bae6fd; }
+  .editor-panel .ep-head .hint { color:#64748b; font-size:11.5px; margin-left:auto; }
+  .ed-toolbar { display:flex; gap:4px; padding:8px 16px; border-bottom:1px solid var(--line); background:#0e1a2c; position:sticky; top:0; z-index:5; flex-wrap:wrap; }
+  .ed-toolbar button { background:transparent; border:1px solid var(--line); color:var(--txt); min-width:32px; height:30px; padding:0 9px; border-radius:6px; cursor:pointer; font-size:13px; }
+  .ed-toolbar button:hover { border-color:var(--accent); color:var(--accent); background:var(--card2); }
+  .ed-toolbar .sep { width:1px; background:var(--line); margin:2px 5px; }
+  .ep-body { padding:14px 16px 18px; }
+  .ed-group { margin-bottom:16px; }
+  .ed-group > .gh { font-size:12.5px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--line); padding-bottom:5px; margin-bottom:8px; }
+  .ed-label { font-size:12.5px; font-weight:600; color:var(--muted); margin:8px 0 4px; }
+  .ed { background:#0b1322; border:1px solid var(--line); border-radius:8px; padding:10px 12px; min-height:64px; font-size:13.5px; line-height:1.6; outline:none; transition:border-color .15s; }
+  .ed:focus { border-color:var(--accent); }
+  .ed:empty:before { content:'Buraya yazın…'; color:#475569; font-style:italic; }
+  .ed ul, .ed ol { margin:4px 0 4px 22px; padding:0; }
+  .ed b, .ed strong { color:#f1f5f9; }
+
   .doc-title { font-size:16px; font-weight:700; margin:6px 0 2px; }
   .doc-sub { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
   .loader { display:none; align-items:center; gap:10px; color:var(--muted); margin:18px 0; }
@@ -403,6 +422,110 @@ function rawBlock(ham){
   return parts.map(([t,c]) => `<details class="raw"><summary>${t}</summary><pre>${esc(c)}</pre></details>`).join('');
 }
 
+// ---------- Uzman bölümleri editörü ----------
+// Sunucudaki BOLUMLER düzeniyle aynı (src/rapor.js)
+const ED_BOLUMLER = [
+  { heading:'BÖLGE ÖZELLİKLERİ', subs:[{ key:'bolge', label:'Gayrimenkulun Konumu, Çevresel Özellikleri ve Yakın Çevresinin Yapılaşma Bilgileri:' }]},
+  { heading:'GAYRİMENKULÜN TEKNİK ÖZELLİKLERİ', subs:[{ key:'teknik', label:'Gayrimenkulun Tanımı / Binadaki Konumu:' }]},
+  { heading:'İSKAN BİLGİSİ', subs:[{ key:'iskan', label:'Gayrimenkulde Kaçak Yapılaşma / Ruhsata Uygunluk Açıklaması:' }]},
+  { heading:'İMAR DURUMU', subs:[{ key:'imar', label:'İmar Durumu Açıklama/Plan Notu:' }]},
+  { heading:'DEĞERLEMEYİ ETKİLEYEN FAKTÖRLER', subs:[
+    { key:'olumlu', label:'Olumlu Faktörler:' }, { key:'olumsuz', label:'Olumsuz Faktörler:' }]},
+  { heading:'NOTLAR / DÜŞÜNCELER / FİYATLANDIRMA', subs:[
+    { key:'fiyatlandirma', label:'' }, { key:'emsaller', label:'Emsaller:' },
+    { key:'emsalAciklama', label:'Emsaller ile ilgili Diğer Açıklamalar:' }]},
+];
+
+function editorPanelHtml(){
+  const tb = `<div class="ed-toolbar">
+    <button onmousedown="event.preventDefault()" onclick="edCmd('bold')" title="Kalın (Ctrl+B)"><b>K</b></button>
+    <button onmousedown="event.preventDefault()" onclick="edCmd('italic')" title="İtalik (Ctrl+I)"><i>T</i></button>
+    <button onmousedown="event.preventDefault()" onclick="edCmd('underline')" title="Altı çizili (Ctrl+U)"><u>A</u></button>
+    <span class="sep"></span>
+    <button onmousedown="event.preventDefault()" onclick="edCmd('insertUnorderedList')" title="Madde işaretli liste">• Liste</button>
+    <button onmousedown="event.preventDefault()" onclick="edCmd('insertOrderedList')" title="Numaralı liste">1. Liste</button>
+    <span class="sep"></span>
+    <button onmousedown="event.preventDefault()" onclick="edCmd('undo')" title="Geri al">↶</button>
+    <button onmousedown="event.preventDefault()" onclick="edCmd('redo')" title="Yinele">↷</button>
+    <button onmousedown="event.preventDefault()" onclick="edCmd('removeFormat')" title="Biçimlendirmeyi temizle">⌫ Biçim</button>
+  </div>`;
+  const groups = ED_BOLUMLER.map(g =>
+    `<div class="ed-group"><div class="gh">${g.heading}</div>` +
+    g.subs.map(s => `${s.label ? `<div class="ed-label">${s.label}</div>` : ''}<div class="ed" contenteditable="true" data-key="${s.key}"></div>`).join('') +
+    `</div>`).join('');
+  return `<div class="editor-panel">
+    <div class="ep-head"><span class="t">📝 Rapor Bölümleri (Uzman Alanları)</span>
+      <span class="hint">Otomatik kaydedilir · "Word Raporu İndir" çıktısına eklenir</span></div>
+    ${tb}<div class="ep-body">${groups}</div></div>`;
+}
+
+function edCmd(cmd){
+  try { document.execCommand('styleWithCSS', false, false); } catch(e){}
+  document.execCommand(cmd, false, null);
+}
+
+function sanitizeHtml(html){
+  const t = document.createElement('div');
+  t.innerHTML = String(html || '');
+  t.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(n => n.remove());
+  t.querySelectorAll('*').forEach(n => {
+    [...n.attributes].forEach(a => {
+      if (/^on/i.test(a.name) || /javascript:/i.test(a.value)) n.removeAttribute(a.name);
+    });
+  });
+  return t.innerHTML;
+}
+
+// Editör DOM'unu yapısal bloklara çevir: [{type:'p'|'li', ordered, runs:[{text,bold,italic,underline}]}]
+function editorToBlocks(root){
+  const blocks = [];
+  function collectRuns(node, fmt, lines){
+    if (node.nodeType === 3){ if (node.textContent) lines[lines.length-1].push({ text: node.textContent, ...fmt }); return; }
+    if (node.nodeName === 'BR'){ lines.push([]); return; }
+    const f = { ...fmt };
+    const n = node.nodeName;
+    if (n === 'B' || n === 'STRONG') f.bold = true;
+    if (n === 'I' || n === 'EM') f.italic = true;
+    if (n === 'U') f.underline = true;
+    if (node.style){
+      if (node.style.fontWeight === 'bold' || +node.style.fontWeight >= 600) f.bold = true;
+      if (node.style.fontStyle === 'italic') f.italic = true;
+      if ((node.style.textDecoration || '').includes('underline')) f.underline = true;
+    }
+    node.childNodes.forEach(c => collectRuns(c, f, lines));
+  }
+  function handleBlock(el, li, ordered){
+    const lines = [[]];
+    el.childNodes.forEach(c => collectRuns(c, {}, lines));
+    lines.forEach(runs => { if (runs.length || !li) blocks.push({ type: li ? 'li' : 'p', ordered: !!ordered, runs }); });
+  }
+  root.childNodes.forEach(node => {
+    if (node.nodeType === 3){ if (node.textContent.trim()) blocks.push({ type:'p', runs:[{ text: node.textContent }] }); return; }
+    const n = node.nodeName;
+    if (n === 'UL' || n === 'OL') node.querySelectorAll(':scope > li').forEach(li => handleBlock(li, true, n === 'OL'));
+    else if (n === 'BR') blocks.push({ type:'p', runs:[] });
+    else handleBlock(node, false, false);
+  });
+  while (blocks.length && !blocks[blocks.length-1].runs.some(r => (r.text||'').trim())) blocks.pop();
+  return blocks;
+}
+
+let edSaveTimer = null;
+function saveEditors(){
+  const item = history.find(h => h.id === currentId);
+  if (!item) return;
+  item.bolumler = item.bolumler || {};
+  let any = false;
+  currentEl.querySelectorAll('.ed').forEach(ed => { item.bolumler[ed.dataset.key] = ed.innerHTML; any = true; });
+  if (any) saveHistory();
+}
+function flushEditors(){ if (edSaveTimer){ clearTimeout(edSaveTimer); edSaveTimer = null; } saveEditors(); }
+currentEl.addEventListener('input', e => {
+  if (!e.target.closest || !e.target.closest('.ed')) return;
+  clearTimeout(edSaveTimer);
+  edSaveTimer = setTimeout(() => { edSaveTimer = null; saveEditors(); }, 600);
+});
+
 // ---------- Ana render ----------
 function renderCurrent(){
   const item = history.find(h => h.id === currentId);
@@ -423,12 +546,20 @@ function renderCurrent(){
       <textarea id="raporText" spellcheck="false">${esc(rapor)}</textarea>
     </div>
 
+    ${editorPanelHtml()}
+
     <div class="section"><h3>Tapu Kayıt Bilgisi</h3>${kvBlock(v.tapuKayit, KAYIT_LABELS)}</div>
     <div class="section"><h3>Taşınmaza Ait Şerh / Beyan / İrtifak</h3>${serhTable(v.tasinmazSerhBeyan)}</div>
     <div class="section"><h3>Mülkiyet (Malik) Bilgileri</h3>${mulkiyetTable(v.mulkiyet)}</div>
     <div class="section"><h3>Mülkiyete Ait Şerh / Beyan (Haciz vb.)</h3>${serhTable(v.mulkiyetSerhBeyan)}</div>
     <div class="section"><h3>İpotek / Rehin Bilgileri</h3>${ipotekTable(v.ipotekler)}</div>
     <div class="section"><h3>Ham Metin (doğrulama için)</h3>${rawBlock(v.hamMetin)}</div>`;
+  // Kayıtlı uzman bölümlerini editörlere geri yükle
+  const saved = item.bolumler || {};
+  currentEl.querySelectorAll('.ed').forEach(ed => {
+    const html = saved[ed.dataset.key];
+    if (html) ed.innerHTML = sanitizeHtml(html);
+  });
   window.scrollTo(0,0);
 }
 
@@ -444,7 +575,7 @@ function renderSidebar(){
     </div>`;
   }).join('');
 }
-function selectHist(id){ currentId = id; renderSidebar(); renderCurrent(); closeSidebar(); }
+function selectHist(id){ flushEditors(); currentId = id; renderSidebar(); renderCurrent(); closeSidebar(); }
 function delHist(id){
   history = history.filter(h => h.id !== id);
   if(currentId === id) currentId = history.length ? history[0].id : null;
@@ -461,7 +592,15 @@ function doCopy(text, btn, okText){
 function copyFrom(btn){ doCopy(btn.previousElementSibling.textContent, btn); }
 function copyRapor(btn){ doCopy(document.getElementById('raporText').value, btn, '✓ Kopyalandı'); }
 
-// Word raporu indir — takyidat metni (textarea'daki düzenlenmiş hali) + tapu kayıt
+// Editörlerdeki uzman içeriğini yapısal bloklar halinde topla
+function toplaBolumler(){
+  flushEditors();
+  const out = {};
+  currentEl.querySelectorAll('.ed').forEach(ed => { out[ed.dataset.key] = editorToBlocks(ed); });
+  return out;
+}
+
+// Word raporu indir — takyidat metni (textarea'daki düzenlenmiş hali) + tapu kayıt + uzman bölümleri
 async function indirWord(btn){
   const item = history.find(h => h.id === currentId);
   if(!item) return;
@@ -475,6 +614,7 @@ async function indirWord(btn){
         raporMetni: document.getElementById('raporText').value,
         tapuKayit: item.veri.tapuKayit,
         mulkiyet: item.veri.mulkiyet,
+        bolumler: toplaBolumler(),
       }),
     });
     if(!res.ok) throw new Error('Sunucu hatası: ' + res.status);

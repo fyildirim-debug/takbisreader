@@ -85,7 +85,64 @@ export function raporNo(dosyaAdi) {
   return m ? m[0].toUpperCase() : '';
 }
 
-export async function olusturRapor({ dosyaAdi, raporMetni, tapuKayit = {}, mulkiyet = [] }) {
+// Uzman bölümleri düzeni — arayüzdeki editör panelinde aynı sırayla görünür
+export const BOLUMLER = [
+  { heading: 'BÖLGE ÖZELLİKLERİ', subs: [
+    { key: 'bolge', label: 'Gayrimenkulun Konumu, Çevresel Özellikleri ve Yakın Çevresinin Yapılaşma Bilgileri:' },
+  ]},
+  { heading: 'GAYRİMENKULÜN TEKNİK ÖZELLİKLERİ', subs: [
+    { key: 'teknik', label: 'Gayrimenkulun Tanımı / Binadaki Konumu:' },
+  ]},
+  { heading: 'İSKAN BİLGİSİ', subs: [
+    { key: 'iskan', label: 'Gayrimenkulde Kaçak Yapılaşma / Ruhsata Uygunluk Açıklaması:' },
+  ]},
+  { heading: 'İMAR DURUMU', subs: [
+    { key: 'imar', label: 'İmar Durumu Açıklama/Plan Notu:' },
+  ]},
+  { heading: 'DEĞERLEMEYİ ETKİLEYEN FAKTÖRLER', subs: [
+    { key: 'olumlu', label: 'Olumlu Faktörler:' },
+    { key: 'olumsuz', label: 'Olumsuz Faktörler:' },
+  ]},
+  { heading: 'NOTLAR / DÜŞÜNCELER / FİYATLANDIRMA', subs: [
+    { key: 'fiyatlandirma', label: '' },
+    { key: 'emsaller', label: 'Emsaller:' },
+    { key: 'emsalAciklama', label: 'Emsaller ile ilgili Diğer Açıklamalar:' },
+  ]},
+];
+
+// Editörden gelen yapısal blokları (paragraf/madde + kalın/italik/altçizgi
+// koşuları) docx paragraflarına çevir
+function bolumParagraflari(blocks) {
+  const out = [];
+  let sira = 0; // numaralı liste sayacı
+  for (const b of blocks || []) {
+    const runs = (b.runs || [])
+      .filter((r) => r && typeof r.text === 'string')
+      .map((r) => new TextRun({
+        text: r.text, font: FONT, size: 21,
+        bold: !!r.bold, italics: !!r.italic,
+        underline: r.underline ? {} : undefined,
+      }));
+    if (b.type === 'li') {
+      if (b.ordered) {
+        sira++;
+        runs.unshift(new TextRun({ text: `${sira}. `, font: FONT, size: 21 }));
+        out.push(new Paragraph({ spacing: { after: 60 }, indent: { left: 360 }, children: runs }));
+      } else {
+        out.push(new Paragraph({ spacing: { after: 60 }, bullet: { level: 0 }, children: runs }));
+      }
+    } else {
+      sira = 0;
+      out.push(new Paragraph({
+        spacing: { after: 80 },
+        children: runs.length ? runs : [new TextRun({ text: '', font: FONT, size: 21 })],
+      }));
+    }
+  }
+  return out;
+}
+
+export async function olusturRapor({ dosyaAdi, raporMetni, tapuKayit = {}, mulkiyet = [], bolumler = {} }) {
   const [il = '', ilce = ''] = String(tapuKayit.ilIlce || '').split('/');
   const malikler = mulkiyet.map((m) => `${m.adSoyad || m.malik}${m.hisse ? ` (${m.hisse})` : ''}`).join(', ');
 
@@ -121,36 +178,20 @@ export async function olusturRapor({ dosyaAdi, raporMetni, tapuKayit = {}, mulki
 
     baslik('TAPU TAKYİDAT BİLGİLERİ'),
     ...takyidatParagraflari(raporMetni),
-
-    baslik('BÖLGE ÖZELLİKLERİ'),
-    p('Gayrimenkulun Konumu, Çevresel Özellikleri ve Yakın Çevresinin Yapılaşma Bilgileri:', { bold: true }),
-    bosAlan(),
-
-    baslik('GAYRİMENKULÜN TEKNİK ÖZELLİKLERİ'),
-    p('Gayrimenkulun Tanımı / Binadaki Konumu:', { bold: true }),
-    bosAlan(),
-
-    baslik('İSKAN BİLGİSİ'),
-    p('Gayrimenkulde Kaçak Yapılaşma / Ruhsata Uygunluk Açıklaması:', { bold: true }),
-    bosAlan(),
-
-    baslik('İMAR DURUMU'),
-    p('İmar Durumu Açıklama/Plan Notu:', { bold: true }),
-    bosAlan(),
-
-    baslik('DEĞERLEMEYİ ETKİLEYEN FAKTÖRLER'),
-    p('Olumlu Faktörler:', { bold: true }),
-    bosAlan(),
-    p('Olumsuz Faktörler:', { bold: true }),
-    bosAlan(),
-
-    baslik('NOTLAR / DÜŞÜNCELER / FİYATLANDIRMA'),
-    bosAlan(),
-    p('Emsaller:', { bold: true }),
-    bosAlan(),
-    p('Emsaller ile ilgili Diğer Açıklamalar:', { bold: true }),
-    bosAlan(),
   ];
+
+  // Uzman bölümleri: panel üzerinden doldurulan içerik varsa onu kullan,
+  // yoksa "doldurulacaktır" yer tutucusunu koy
+  for (const grup of BOLUMLER) {
+    children.push(baslik(grup.heading));
+    for (const sub of grup.subs) {
+      if (sub.label) children.push(p(sub.label, { bold: true }));
+      const blocks = bolumler[sub.key];
+      const dolu = Array.isArray(blocks) && blocks.some((b) => (b.runs || []).some((r) => (r.text || '').trim()));
+      if (dolu) children.push(...bolumParagraflari(blocks));
+      else children.push(bosAlan());
+    }
+  }
 
   const doc = new Document({
     creator: 'TAKBIS Reader',

@@ -92,8 +92,8 @@ app.post('/api/parse', upload.array('files', 50), async (req, res) => {
 // Word (.docx) değerleme raporu iskeleti üret (veri saklanmaz, anında üretilip döner)
 app.post('/api/rapor', express.json({ limit: '5mb' }), async (req, res) => {
   try {
-    const { dosyaAdi, raporMetni, tapuKayit, mulkiyet } = req.body || {};
-    const buf = await olusturRapor({ dosyaAdi, raporMetni, tapuKayit, mulkiyet });
+    const { dosyaAdi, raporMetni, tapuKayit, mulkiyet, bolumler } = req.body || {};
+    const buf = await olusturRapor({ dosyaAdi, raporMetni, tapuKayit, mulkiyet, bolumler });
     const no = raporNo(dosyaAdi) || 'takbis';
     const ascii = `rapor-${no.replace(/[^\w-]/g, '_')}.docx`;
     res.set({
