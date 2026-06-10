@@ -1136,8 +1136,9 @@ async function getirUavt(btn){
   btn.textContent = '⏳ NVİ sorgulanıyor…'; btn.disabled = true;
   try {
     const r = await fetch(`/api/uavt?lat=${lat}&lon=${lon}`);
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+    const txt = await r.text();
+    let j = null; try { j = JSON.parse(txt); } catch(_) {}
+    if (!r.ok || !j) throw new Error((j && j.error) || 'NVİ sunucudan yanıt alınamadı (engel/zaman aşımı)');
     item.uavtListe = j.liste || [];
     delete item.uavtHata;
     saveHistory(); refreshKonum(item);
