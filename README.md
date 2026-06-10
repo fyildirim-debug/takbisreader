@@ -20,6 +20,12 @@ metin** üreten Node.js web uygulaması.
   olmadan tek tıkla yeniden açılır.
 - **Sağlam ayrıştırma:** Sayfa kırılmasıyla bölünen kayıtlar, bitişik yazılan alanlar,
   "BİLGİ AMAÇLIDIR" filigran kırıntıları ve mükerrer haciz kayıtları doğru biçimde işlenir.
+- **TKGM parsel entegrasyonu:** Belgeden çıkan il/ilçe/mahalle/ada/parsel ile TKGM
+  CBS API'sinden pafta no, koordinat ve parsel geometrisi otomatik alınır; yüzölçüm
+  TAKBIS ile çapraz doğrulanır, parsel haritada (OpenStreetMap/Leaflet) gösterilir.
+- **Adres & çevre analizi (OSM):** Koordinattan açık adres (Nominatim) ve yakın
+  çevredeki okul/hastane/market/durak mesafeleri (Overpass) — "Bölge Özellikleri"
+  bölümüne tek tıkla metin olarak eklenir.
 - **Excel/CSV & JSON dışa aktarma.**
 
 ## 🔒 Gizlilik

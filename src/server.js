@@ -6,6 +6,7 @@ import path from 'path';
 import { parseTakbis } from './parser.js';
 import { recordVisit, recordParse, renderStatsPage } from './stats.js';
 import { olusturRapor, raporNo } from './rapor.js';
+import { parselSorgu, adresBul, cevreAnaliz } from './konum.js';
 
 // pdf-parse CommonJS olduğu için require ile yüklüyoruz
 const require = createRequire(import.meta.url);
@@ -99,11 +100,44 @@ app.post('/api/parse', upload.array('files', 50), async (req, res) => {
   res.json({ adet: results.length, sonuclar: results });
 });
 
+// TKGM parsel + Nominatim adres (önbellekli) — pafta, koordinat, geometri
+app.get('/api/konum', async (req, res) => {
+  try {
+    const { il, ilce, mahalle, ada, parsel } = req.query;
+    if (!il || !ilce || !ada || !parsel) {
+      return res.status(400).json({ error: 'Eksik parametre (il, ilçe, ada, parsel gerekli)' });
+    }
+    const k = await parselSorgu({ il, ilce, mahalle, ada, parsel });
+    let adres = null;
+    if (k.merkez) {
+      try { adres = await adresBul(k.merkez.lat, k.merkez.lon); } catch { /* adres opsiyonel */ }
+    }
+    res.json({ ...k, adres });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// Overpass çevre analizi — yakın okul/hastane/market/durak vb.
+app.get('/api/cevre', async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lon = parseFloat(req.query.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return res.status(400).json({ error: 'Geçersiz koordinat' });
+  }
+  try {
+    const pois = await cevreAnaliz(lat, lon);
+    res.json({ pois });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
 // Word (.docx) değerleme raporu iskeleti üret (veri saklanmaz, anında üretilip döner)
 app.post('/api/rapor', express.json({ limit: '5mb' }), async (req, res) => {
   try {
-    const { dosyaAdi, raporMetni, tapuKayit, mulkiyet, bolumler } = req.body || {};
-    const buf = await olusturRapor({ dosyaAdi, raporMetni, tapuKayit, mulkiyet, bolumler });
+    const { dosyaAdi, raporMetni, tapuKayit, mulkiyet, bolumler, konum } = req.body || {};
+    const buf = await olusturRapor({ dosyaAdi, raporMetni, tapuKayit, mulkiyet, bolumler, konum });
     const no = raporNo(dosyaAdi) || 'takbis';
     const ascii = `rapor-${no.replace(/[^\w-]/g, '_')}.docx`;
     res.set({
