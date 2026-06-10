@@ -230,10 +230,11 @@ export async function cevreAnaliz(lat, lon, keys = [], radius = 1500) {
 // gerektirir; CORS kapalı olduğundan sunucu tarafından yapılır, önbelleklenir.
 // ÖNEMLİ: NVİ parametreleri ters bekler -> latitude=BOYLAM, longitude=ENLEM.
 // ---------------------------------------------------------------------------
-const NVI_BASE = 'https://adres.nvi.gov.tr';
-let nviSession = { cookie: '', token: '', exp: 0 };
+import { ProxyAgent, fetch as ufetch } from 'undici';
 
-// F5 WAF bot tespitini geçmek için gerçek tarayıcı başlıkları
+const NVI_BASE = 'https://adres.nvi.gov.tr';
+
+// F5 WAF bot tespitine karşı gerçek tarayıcı başlıkları
 const NVI_BROWSER = {
   'User-Agent': UA_NVI['User-Agent'],
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -241,89 +242,77 @@ const NVI_BROWSER = {
   'sec-ch-ua': '"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"',
   'sec-ch-ua-mobile': '?0',
   'sec-ch-ua-platform': '"Windows"',
-  'Upgrade-Insecure-Requests': '1',
 };
 
-// Opsiyonel çıkış proxy'si (Türkiye IP'si gerekiyorsa Dokploy'da NVI_PROXY ayarla)
-let nviDispatcher = null;
-if (process.env.NVI_PROXY) {
-  try {
-    const { ProxyAgent } = await import('undici');
-    nviDispatcher = new ProxyAgent(process.env.NVI_PROXY);
-  } catch { /* undici yoksa proxy'siz devam */ }
-}
-function nviOpts(opts = {}) {
-  return nviDispatcher ? { ...opts, dispatcher: nviDispatcher } : opts;
-}
+// ---- Ücretsiz Türkiye proxy listesi (NVİ devlet IP engelini aşmak için) ----
+let workingProxy = null; // son çalışan proxy (öncelikli denenir)
 
-async function nviAuth() {
-  if (nviSession.exp > Date.now() && nviSession.cookie && nviSession.token) return nviSession;
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 12000);
-  let r;
-  try {
-    r = await fetch(`${NVI_BASE}/VatandasIslemleri/AdresSorgu`, nviOpts({
-      headers: { ...NVI_BROWSER, 'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none' },
-      signal: ctrl.signal,
-    }));
-  } catch (e) {
-    throw new Error('NVİ\'ye ulaşılamadı (zaman aşımı/engel)');
-  } finally { clearTimeout(t); }
-  const cookies = (r.headers.getSetCookie ? r.headers.getSetCookie() : []).map((c) => c.split(';')[0]);
-  const html = await r.text();
-  const token = (html.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/) || [])[1] || '';
-  const cookie = cookies.join('; ');
-  if (!cookie || !token) {
-    throw new Error('NVİ oturumu alınamadı (HTTP ' + r.status + ') — sunucu IP\'si engellenmiş olabilir');
-  }
-  nviSession = { cookie, token, exp: Date.now() + 10 * 60e3 };
-  return nviSession;
-}
-
-export async function uavtSorgu(lat, lon) {
-  const key = `u|${(+lat).toFixed(6)}|${(+lon).toFixed(6)}`;
-  const hit = cGet(key);
+async function trProxyList() {
+  const hit = cGet('trproxies');
   if (hit) return hit;
-
-  async function call() {
-    const { cookie, token } = await nviAuth();
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 12000);
+  const srcs = [
+    'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=tr',
+    'https://proxylist.geonode.com/api/proxy-list?country=TR&protocols=http,https&limit=100&page=1&sort_by=lastChecked&sort_type=desc',
+    'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/countries/TR/data.txt',
+  ];
+  const set = new Set();
+  for (const s of srcs) {
     try {
-      const r = await fetch(`${NVI_BASE}/Harita/NumaratajListesiByGeometry`, nviOpts({
-        method: 'POST',
-        headers: {
-          ...NVI_BROWSER,
-          Accept: 'application/json, text/javascript, */*; q=0.01',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          __RequestVerificationToken: token,
-          Cookie: cookie,
-          Origin: NVI_BASE,
-          Referer: `${NVI_BASE}/VatandasIslemleri/AdresSorgu`,
-          'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-origin',
-        },
-        body: `latitude=${lon}&longitude=${lat}`, // NVİ: parametreler ters
-        signal: ctrl.signal,
-      }));
-      if (!r.ok) throw new Error('NVİ HTTP ' + r.status);
+      const r = await fetch(s, { headers: UA_OSM, signal: AbortSignal.timeout(10000) });
       const ct = r.headers.get('content-type') || '';
-      if (!ct.includes('json')) throw new Error('NVİ erişimi engellendi (WAF/IP)');
-      return await r.json();
-    } finally {
-      clearTimeout(t);
-    }
+      if (ct.includes('json')) {
+        const j = await r.json();
+        for (const p of j.data || []) set.add(`${p.ip}:${p.port}`);
+      } else {
+        for (const line of (await r.text()).split(/\s+/)) {
+          const m = line.replace(/^https?:\/\//, '').match(/^(\d+\.\d+\.\d+\.\d+:\d+)$/);
+          if (m) set.add(m[1]);
+        }
+      }
+    } catch { /* kaynak atlanır */ }
   }
+  const list = [...set];
+  cSet('trproxies', list, 10 * 60e3);
+  return list;
+}
 
-  let j;
-  try {
-    j = await call();
-  } catch (e) {
-    nviSession.exp = 0; // oturum bayatlamış olabilir → bir kez yenile
-    j = await call();
-  }
-  if (j && j.success === false) throw new Error(j.message || 'NVİ sorgu hatası');
+// Tek bir yol (proxy veya doğrudan) üzerinden tam NVİ akışı: auth + numarataj
+async function nviFlow(lat, lon, dispatcher) {
+  const base = dispatcher ? { dispatcher } : {};
+  // 1) Oturum: cookie + anti-forgery token
+  const pg = await ufetch(`${NVI_BASE}/VatandasIslemleri/AdresSorgu`, {
+    ...base,
+    headers: { ...NVI_BROWSER, 'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none' },
+    signal: AbortSignal.timeout(11000),
+  });
+  const cookie = (pg.headers.getSetCookie ? pg.headers.getSetCookie() : []).map((c) => c.split(';')[0]).join('; ');
+  const token = ((await pg.text()).match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/) || [])[1] || '';
+  if (!cookie || !token) throw new Error('oturum/token alınamadı');
+  // 2) Numarataj: koordinattan bağımsız bölümler (NVİ parametreleri TERS)
+  const r = await ufetch(`${NVI_BASE}/Harita/NumaratajListesiByGeometry`, {
+    ...base,
+    method: 'POST',
+    headers: {
+      ...NVI_BROWSER,
+      Accept: 'application/json, text/javascript, */*; q=0.01',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      __RequestVerificationToken: token,
+      Cookie: cookie,
+      Origin: NVI_BASE,
+      Referer: `${NVI_BASE}/VatandasIslemleri/AdresSorgu`,
+    },
+    body: `latitude=${lon}&longitude=${lat}`,
+    signal: AbortSignal.timeout(11000),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  if (!(r.headers.get('content-type') || '').includes('json')) throw new Error('engellendi');
+  const j = await r.json();
+  if (j && j.success === false) throw new Error(j.message || 'NVİ hata');
+  return j;
+}
 
+function parseBB(j) {
   const liste = [];
   for (const b of Array.isArray(j) ? j : []) {
     for (const x of b.bagimsizBolumler || []) {
@@ -340,6 +329,44 @@ export async function uavtSorgu(lat, lon) {
       });
     }
   }
+  return liste;
+}
+
+const agentCache = new Map();
+function agentFor(proxy) {
+  if (!proxy) return null;
+  if (!agentCache.has(proxy)) agentCache.set(proxy, new ProxyAgent('http://' + proxy));
+  return agentCache.get(proxy);
+}
+
+export async function uavtSorgu(lat, lon) {
+  const key = `u|${(+lat).toFixed(6)}|${(+lon).toFixed(6)}`;
+  const hit = cGet(key);
+  if (hit) return hit;
+
+  // Denenecek yollar: önce env proxy / son çalışan proxy, sonra doğrudan, sonra ücretsiz TR proxy'ler
+  const candidates = [];
+  if (process.env.NVI_PROXY) candidates.push(process.env.NVI_PROXY.replace(/^https?:\/\//, ''));
+  if (workingProxy) candidates.push(workingProxy);
+  candidates.push(null); // doğrudan (sunucu IP'si — engelli olabilir)
+  const proxies = await trProxyList();
+  for (const p of proxies) if (p !== workingProxy) candidates.push(p);
+
+  // İlk 16 yolu paralel dene; ilk geçerli yanıt kazanır
+  const batch = candidates.slice(0, 16);
+  const attempts = batch.map((p) =>
+    nviFlow(lat, lon, agentFor(p)).then((j) => ({ j, proxy: p })),
+  );
+
+  let win;
+  try {
+    win = await Promise.any(attempts);
+  } catch {
+    throw new Error('NVİ tüm yollardan engellendi/erişilemedi (ücretsiz proxyler tükendi, tekrar deneyin)');
+  }
+
+  workingProxy = win.proxy; // çalışan yolu hatırla (null = doğrudan)
+  const liste = parseBB(win.j);
   cSet(key, liste, 6 * 3600e3);
   return liste;
 }
