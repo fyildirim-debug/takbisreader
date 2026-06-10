@@ -942,29 +942,47 @@ function konumHtml(item){
   return kv + links + harita + uavt + cevre;
 }
 
-// Parsel poligonundan örnek koordinatlar (merkez + içe çekilmiş köşeler).
-// Çok bloklu parsellerde her blok farklı noktaya denk geldiğinden hepsini yakalar.
+// Parsel poligonundan örnek koordinatlar: merkez + poligon içi ızgara (grid) +
+// içe çekilmiş köşeler. Çok bloklu parsellerde her blok farklı noktaya denk
+// geldiğinden ızgara tüm binaları (A/B/C/D ...) yakalar.
 function samplePoints(geometry, merkez){
   const pts = [];
   if (merkez) pts.push([merkez.lat, merkez.lon]);
   try {
     if (geometry && geometry.coordinates){
       const ring = geometry.type === 'MultiPolygon' ? geometry.coordinates[0][0] : geometry.coordinates[0];
-      if (Array.isArray(ring) && ring.length){
-        const cx = ring.reduce((s,c)=>s+c[0],0)/ring.length;
-        const cy = ring.reduce((s,c)=>s+c[1],0)/ring.length;
-        const step = Math.max(1, Math.floor(ring.length/8));
-        for (let i=0;i<ring.length;i+=step){
-          const [x,y] = ring[i];
-          pts.push([ +(cy+(y-cy)*0.6).toFixed(6), +(cx+(x-cx)*0.6).toFixed(6) ]);
+      if (Array.isArray(ring) && ring.length > 2){
+        const xs = ring.map(c=>c[0]), ys = ring.map(c=>c[1]);
+        const minx=Math.min(...xs), maxx=Math.max(...xs), miny=Math.min(...ys), maxy=Math.max(...ys);
+        const cx = xs.reduce((s,v)=>s+v,0)/xs.length, cy = ys.reduce((s,v)=>s+v,0)/ys.length;
+        const inside = (x,y) => {
+          let inq = false;
+          for (let i=0, j=ring.length-1; i<ring.length; j=i++){
+            const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+            if (((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inq = !inq;
+          }
+          return inq;
+        };
+        // ÖNCE içe çekilmiş köşeler (kenardaki bloklar — ör. D) iki kademede
+        for (const f of [0.75, 0.5]) {
+          for (let i=0;i<ring.length;i++){
+            const [x,y] = ring[i];
+            pts.push([ +(cy+(y-cy)*f).toFixed(6), +(cx+(x-cx)*f).toFixed(6) ]);
+          }
+        }
+        // SONRA poligon içi ızgara (iç bloklar — ör. C)
+        const N = 5;
+        for (let a=1;a<=N;a++) for (let b=1;b<=N;b++){
+          const x = minx+(maxx-minx)*a/(N+1), y = miny+(maxy-miny)*b/(N+1);
+          if (inside(x,y)) pts.push([ +y.toFixed(6), +x.toFixed(6) ]);
         }
       }
     }
   } catch(e){}
-  // tekilleştir, en fazla 10 nokta
+  // tekilleştir, en fazla 22 nokta
   const seen = new Set(), out = [];
   for (const p of pts){ const k=p[0]+','+p[1]; if(!seen.has(k)){ seen.add(k); out.push(p); } }
-  return out.slice(0,10);
+  return out.slice(0,22);
 }
 
 async function fetchKonum(item){
