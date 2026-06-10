@@ -233,14 +233,47 @@ export async function cevreAnaliz(lat, lon, keys = [], radius = 1500) {
 const NVI_BASE = 'https://adres.nvi.gov.tr';
 let nviSession = { cookie: '', token: '', exp: 0 };
 
+// F5 WAF bot tespitini geçmek için gerçek tarayıcı başlıkları
+const NVI_BROWSER = {
+  'User-Agent': UA_NVI['User-Agent'],
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+  'sec-ch-ua': '"Chromium";v="126", "Google Chrome";v="126", "Not-A.Brand";v="99"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+  'Upgrade-Insecure-Requests': '1',
+};
+
+// Opsiyonel çıkış proxy'si (Türkiye IP'si gerekiyorsa Dokploy'da NVI_PROXY ayarla)
+let nviDispatcher = null;
+if (process.env.NVI_PROXY) {
+  try {
+    const { ProxyAgent } = await import('undici');
+    nviDispatcher = new ProxyAgent(process.env.NVI_PROXY);
+  } catch { /* undici yoksa proxy'siz devam */ }
+}
+function nviOpts(opts = {}) {
+  return nviDispatcher ? { ...opts, dispatcher: nviDispatcher } : opts;
+}
+
 async function nviAuth() {
   if (nviSession.exp > Date.now() && nviSession.cookie && nviSession.token) return nviSession;
-  const r = await fetch(`${NVI_BASE}/VatandasIslemleri/AdresSorgu`, { headers: UA_NVI });
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 25000);
+  let r;
+  try {
+    r = await fetch(`${NVI_BASE}/VatandasIslemleri/AdresSorgu`, nviOpts({
+      headers: { ...NVI_BROWSER, 'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none' },
+      signal: ctrl.signal,
+    }));
+  } finally { clearTimeout(t); }
   const cookies = (r.headers.getSetCookie ? r.headers.getSetCookie() : []).map((c) => c.split(';')[0]);
   const html = await r.text();
   const token = (html.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/) || [])[1] || '';
   const cookie = cookies.join('; ');
-  if (!cookie || !token) throw new Error('NVİ oturumu alınamadı');
+  if (!cookie || !token) {
+    throw new Error('NVİ oturumu alınamadı (HTTP ' + r.status + ') — sunucu IP\'si engellenmiş olabilir');
+  }
   nviSession = { cookie, token, exp: Date.now() + 10 * 60e3 };
   return nviSession;
 }
@@ -253,22 +286,27 @@ export async function uavtSorgu(lat, lon) {
   async function call() {
     const { cookie, token } = await nviAuth();
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 20000);
+    const t = setTimeout(() => ctrl.abort(), 25000);
     try {
-      const r = await fetch(`${NVI_BASE}/Harita/NumaratajListesiByGeometry`, {
+      const r = await fetch(`${NVI_BASE}/Harita/NumaratajListesiByGeometry`, nviOpts({
         method: 'POST',
         headers: {
-          ...UA_NVI,
+          ...NVI_BROWSER,
+          Accept: 'application/json, text/javascript, */*; q=0.01',
           'X-Requested-With': 'XMLHttpRequest',
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
           __RequestVerificationToken: token,
           Cookie: cookie,
+          Origin: NVI_BASE,
           Referer: `${NVI_BASE}/VatandasIslemleri/AdresSorgu`,
+          'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-origin',
         },
         body: `latitude=${lon}&longitude=${lat}`, // NVİ: parametreler ters
         signal: ctrl.signal,
-      });
+      }));
       if (!r.ok) throw new Error('NVİ HTTP ' + r.status);
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) throw new Error('NVİ erişimi engellendi (WAF/IP)');
       return await r.json();
     } finally {
       clearTimeout(t);
