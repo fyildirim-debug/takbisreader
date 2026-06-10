@@ -8,8 +8,9 @@ Dockerfile
 docker-compose.yml
 .dockerignore
 
-# Örnek/test PDF'leri (kişisel veri içerir, imaja girmemeli)
+# Örnek/test PDF'leri ve raporlar (kişisel veri içerir, imaja girmemeli)
 ornek/
 ornek ipotekli/
 test 2/
 *.pdf
+*.docx

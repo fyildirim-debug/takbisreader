@@ -418,7 +418,8 @@ function renderCurrent(){
 
     <div class="rapor">
       <div class="rapor-head"><span class="t">📋 Rapora Hazır Metin (Tapu Takyidat)</span>
-        <button class="copybtn wide" onclick="copyRapor(this)">⧉ Raporu Kopyala</button></div>
+        <button class="copybtn wide" style="margin-left:auto" onclick="indirWord(this)">📄 Word Raporu İndir</button>
+        <button class="copybtn wide" style="margin-left:0" onclick="copyRapor(this)">⧉ Raporu Kopyala</button></div>
       <textarea id="raporText" spellcheck="false">${esc(rapor)}</textarea>
     </div>
 
@@ -459,6 +460,38 @@ function doCopy(text, btn, okText){
 }
 function copyFrom(btn){ doCopy(btn.previousElementSibling.textContent, btn); }
 function copyRapor(btn){ doCopy(document.getElementById('raporText').value, btn, '✓ Kopyalandı'); }
+
+// Word raporu indir — takyidat metni (textarea'daki düzenlenmiş hali) + tapu kayıt
+async function indirWord(btn){
+  const item = history.find(h => h.id === currentId);
+  if(!item) return;
+  const orig = btn.textContent; btn.textContent = '⏳ Hazırlanıyor...'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/rapor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dosyaAdi: item.dosyaAdi,
+        raporMetni: document.getElementById('raporText').value,
+        tapuKayit: item.veri.tapuKayit,
+        mulkiyet: item.veri.mulkiyet,
+      }),
+    });
+    if(!res.ok) throw new Error('Sunucu hatası: ' + res.status);
+    const blob = await res.blob();
+    const cd = res.headers.get('Content-Disposition') || '';
+    const m = cd.match(/filename\*=UTF-8''([^;]+)/);
+    const name = m ? decodeURIComponent(m[1]) : 'degerleme-raporu.docx';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    URL.revokeObjectURL(a.href);
+    btn.textContent = '✓ İndirildi'; btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('ok'); btn.disabled = false; }, 1500);
+  } catch(e) {
+    alert('Word raporu oluşturulamadı: ' + e.message);
+    btn.textContent = orig; btn.disabled = false;
+  }
+}
 
 // ---------- Export ----------
 document.getElementById('btnClearHist').onclick = () => {
