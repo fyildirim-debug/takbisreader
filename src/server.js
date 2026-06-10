@@ -146,7 +146,7 @@ app.post('/api/uavt', express.json({ limit: '256kb' }), async (req, res) => {
   points = (points || [])
     .map((p) => [parseFloat(p[0]), parseFloat(p[1])])
     .filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))
-    .slice(0, 24);
+    .slice(0, 32);
   if (!points.length) return res.status(400).json({ error: 'Geçersiz koordinat' });
   try {
     const liste = await uavtSorgu(points);
