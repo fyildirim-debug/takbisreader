@@ -259,13 +259,15 @@ function nviOpts(opts = {}) {
 async function nviAuth() {
   if (nviSession.exp > Date.now() && nviSession.cookie && nviSession.token) return nviSession;
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 25000);
+  const t = setTimeout(() => ctrl.abort(), 12000);
   let r;
   try {
     r = await fetch(`${NVI_BASE}/VatandasIslemleri/AdresSorgu`, nviOpts({
       headers: { ...NVI_BROWSER, 'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none' },
       signal: ctrl.signal,
     }));
+  } catch (e) {
+    throw new Error('NVİ\'ye ulaşılamadı (zaman aşımı/engel)');
   } finally { clearTimeout(t); }
   const cookies = (r.headers.getSetCookie ? r.headers.getSetCookie() : []).map((c) => c.split(';')[0]);
   const html = await r.text();
@@ -286,7 +288,7 @@ export async function uavtSorgu(lat, lon) {
   async function call() {
     const { cookie, token } = await nviAuth();
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 25000);
+    const t = setTimeout(() => ctrl.abort(), 12000);
     try {
       const r = await fetch(`${NVI_BASE}/Harita/NumaratajListesiByGeometry`, nviOpts({
         method: 'POST',
