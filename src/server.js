@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { parseTakbis } from './parser.js';
 import { recordVisit, recordParse, renderStatsPage } from './stats.js';
+import { olusturRapor, raporNo } from './rapor.js';
 
 // pdf-parse CommonJS olduğu için require ile yüklüyoruz
 const require = createRequire(import.meta.url);
@@ -86,6 +87,23 @@ app.post('/api/parse', upload.array('files', 50), async (req, res) => {
 
   try { recordParse(results.filter((r) => r.basarili).length); } catch { /* yoksay */ }
   res.json({ adet: results.length, sonuclar: results });
+});
+
+// Word (.docx) değerleme raporu iskeleti üret (veri saklanmaz, anında üretilip döner)
+app.post('/api/rapor', express.json({ limit: '5mb' }), async (req, res) => {
+  try {
+    const { dosyaAdi, raporMetni, tapuKayit, mulkiyet } = req.body || {};
+    const buf = await olusturRapor({ dosyaAdi, raporMetni, tapuKayit, mulkiyet });
+    const no = raporNo(dosyaAdi) || 'takbis';
+    const ascii = `rapor-${no.replace(/[^\w-]/g, '_')}.docx`;
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(no + ' - Degerleme Raporu.docx')}`,
+    });
+    res.send(buf);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 app.use((err, req, res, next) => {
