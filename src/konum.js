@@ -421,13 +421,47 @@ export async function uavtSorgu(points, force = false) {
   }
   workingProxy = route.proxy; // çalışan yolu hatırla
 
-  // 2) Diğer noktaları aynı oturum/yol üzerinden paralel sorgula (tüm bloklar)
-  const tumJson = [route.j];
-  if (points.length > 1) {
-    const rest = await Promise.allSettled(
-      points.slice(1).map(([la, lo]) => nviNumarataj(route.dispatcher, route.cookie, route.token, la, lo)),
+  // 2) Diğer noktaları birden çok yola (proxy) DAĞITARAK sorgula. Tek flaky
+  //    proxy'ye 28 paralel istek atmak çoğunu düşürüyordu; bu yüzden ek
+  //    doğrulanmış proxy'lerden de oturum açıp yükü bölüyoruz ve eşzamanlılığı
+  //    sınırlıyoruz. Başarısız noktalar tekrar denenir.
+  const workers = [route];
+  // Doğrudan erişim çalışıyorsa (route.proxy === null) ek proxy'ye GEREK YOK —
+  // tüm noktalar hızlıca doğrudan gider. Yalnızca proxy üzerinden gidiyorsak
+  // (sunucu IP'si engelli) yükü bölmek için ek doğrulanmış proxy işçileri ekle.
+  if (route.proxy) {
+    const withT = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+    const ekUcler = goodProxies.filter((p) => p && p !== route.proxy).slice(0, 4);
+    const ekRoutes = await Promise.allSettled(
+      ekUcler.map(async (p) => {
+        const { cookie, token } = await withT(nviAuthVia(agentFor(p)), 6000);
+        return { proxy: p, dispatcher: agentFor(p), cookie, token };
+      }),
     );
-    for (const r of rest) if (r.status === 'fulfilled') tumJson.push(r.value);
+    for (const r of ekRoutes) if (r.status === 'fulfilled') workers.push(r.value);
+  }
+
+  const tumJson = [route.j];
+  const kalan = points.slice(1);
+  if (kalan.length) {
+    let idx = 0;
+    // Doğrudan erişimde yüksek paralellik; proxy üzerinden sınırlı (proxy'yi boğma)
+    const C = route.proxy ? Math.min(8, Math.max(4, workers.length * 2)) : 12;
+    async function slot() {
+      while (idx < kalan.length) {
+        const i = idx++;
+        const [la, lo] = kalan[i];
+        let ok = false;
+        for (let deneme = 0; deneme < 2 && !ok; deneme++) {
+          const w = workers[(i + deneme) % workers.length];
+          try {
+            tumJson.push(await nviNumarataj(w.dispatcher, w.cookie, w.token, la, lo));
+            ok = true;
+          } catch { /* sonraki worker ile tekrar */ }
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(C, kalan.length) }, slot));
   }
 
   // 3) Birleştir + UAVT'ye göre tekilleştir
