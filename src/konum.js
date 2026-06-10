@@ -307,9 +307,12 @@ async function validateProxies() {
   }
 }
 
-// Açılışta + periyodik olarak (her 3 dk) proxy havuzunu tazele
-validateProxies();
-setInterval(validateProxies, 3 * 60e3).unref?.();
+// Açılışta + periyodik olarak (her 3 dk) proxy havuzunu tazele.
+// Paralı proxy (NVI_PROXY) varsa serbest proxy doğrulamasına gerek yoktur.
+if (!process.env.NVI_PROXY) {
+  validateProxies();
+  setInterval(validateProxies, 3 * 60e3).unref?.();
+}
 
 // NVİ oturumu (cookie + anti-forgery token) — verilen yol (proxy/doğrudan) üzerinden
 async function nviAuthVia(dispatcher) {
@@ -402,21 +405,28 @@ export async function uavtSorgu(points, force = false) {
     if (hit) return hit;
   }
 
-  // 1) Çalışan yolu bul. Öncelik: env proxy -> doğrulanmış havuz -> son çalışan
-  //    -> doğrudan -> ham TR proxy listesi
-  const candidates = [];
-  const ekle = (p) => { if (!candidates.includes(p)) candidates.push(p); };
-  if (process.env.NVI_PROXY) ekle(process.env.NVI_PROXY.replace(/^https?:\/\//, ''));
-  for (const p of goodProxies) ekle(p);     // arka planda NVİ'ye erişebildiği doğrulanmış
-  if (workingProxy) ekle(workingProxy);
-  ekle(null);                                // doğrudan (sunucu IP'si)
-  for (const p of await trProxyList()) ekle(p);
+  // Paralı proxy (NVI_PROXY): auth+userinfo dahil "user:pass@host:port" biçimi
+  const PAID = process.env.NVI_PROXY ? process.env.NVI_PROXY.replace(/^https?:\/\//, '') : null;
+
+  // 1) Çalışan yolu bul.
+  let candidates = [];
+  if (PAID) {
+    // Paralı proxy önce (oynaklığa karşı 3 şans), sonra doğrudan yedek
+    candidates = [PAID, PAID, PAID, null];
+  } else {
+    const ekle = (p) => { if (!candidates.includes(p)) candidates.push(p); };
+    for (const p of goodProxies) ekle(p);   // doğrulanmış havuz
+    if (workingProxy) ekle(workingProxy);
+    ekle(null);                              // doğrudan
+    for (const p of await trProxyList()) ekle(p);
+    candidates = candidates.slice(0, 20);
+  }
 
   let route;
   try {
-    route = await Promise.any(candidates.slice(0, 20).map((p) => routeTry(p, lat0, lon0)));
+    route = await Promise.any(candidates.map((p) => routeTry(p, lat0, lon0)));
   } catch {
-    validateProxies(); // havuzu arka planda tazele (bekleme)
+    if (!PAID) validateProxies(); // serbest havuzu arka planda tazele
     throw new Error('NVİ tüm yollardan engellendi/erişilemedi — birkaç saniye sonra "Tekrar sorgula" deyin');
   }
   workingProxy = route.proxy; // çalışan yolu hatırla
@@ -426,15 +436,18 @@ export async function uavtSorgu(points, force = false) {
   //    doğrulanmış proxy'lerden de oturum açıp yükü bölüyoruz ve eşzamanlılığı
   //    sınırlıyoruz. Başarısız noktalar tekrar denenir.
   const workers = [route];
-  // Doğrudan erişim çalışıyorsa (route.proxy === null) ek proxy'ye GEREK YOK —
-  // tüm noktalar hızlıca doğrudan gider. Yalnızca proxy üzerinden gidiyorsak
-  // (sunucu IP'si engelli) yükü bölmek için ek doğrulanmış proxy işçileri ekle.
+  const withT = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+  // Doğrudan erişim çalışıyorsa (route.proxy === null) ek yola GEREK YOK.
+  // Proxy üzerinden gidiyorsak yükü bölmek için ek oturumlar/işçiler aç:
+  //  - Paralı proxy: aynı proxy üzerinden 3 ek bağımsız oturum (rotating exit)
+  //  - Serbest proxy: doğrulanmış havuzdan farklı proxy'ler
   if (route.proxy) {
-    const withT = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
-    const ekUcler = goodProxies.filter((p) => p && p !== route.proxy).slice(0, 4);
+    const ekUcler = PAID
+      ? [PAID, PAID, PAID]
+      : goodProxies.filter((p) => p && p !== route.proxy).slice(0, 4);
     const ekRoutes = await Promise.allSettled(
       ekUcler.map(async (p) => {
-        const { cookie, token } = await withT(nviAuthVia(agentFor(p)), 6000);
+        const { cookie, token } = await withT(nviAuthVia(agentFor(p)), 8000);
         return { proxy: p, dispatcher: agentFor(p), cookie, token };
       }),
     );
