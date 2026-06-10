@@ -73,7 +73,7 @@ Uygulama `PORT` ortam değişkenini dinler (varsayılan `3000`).
 | `PORT` | Sunucu portu (varsayılan 3000) |
 | `STATS_USER` / `STATS_PASS` | `/stats` paneli kimlik bilgileri |
 | `DATA_DIR` | İstatistik/erişim kaydı dizini (volume için `/app/data`) |
-| `NVI_PROXY` | **Opsiyonel.** NVİ (UAVT) sorgusu için çıkış proxy'si. NVİ devlet sistemi (F5 WAF) veri merkezi/yurt dışı sunucu IP'lerini engelleyebilir; UAVT sorgusu sunucuda çalışmıyorsa Türkiye IP'li bir HTTP(S) proxy URL'si verin (ör. `http://kullanici:sifre@host:port`). Yalnızca NVİ istekleri bu proxy'den geçer. |
+| `NVI_PROXY` | **Opsiyonel.** NVİ (UAVT) sorgusu için sabit çıkış proxy'si (`http://kullanici:sifre@host:port`). Verilirse önce bu denenir. Verilmezse uygulama, NVİ devlet sistemi (F5 WAF) sunucu IP'sini engellediğinde **otomatik olarak ücretsiz Türkiye proxy listelerini** (proxyscrape, geonode, proxifly) çekip paralel dener; çalışanı bulup önbelleğe alır. Sabit/kaliteli bir TR proxy varsa `NVI_PROXY` ile vermek daha hızlı ve güvenilirdir. |
 
 ## 🗂️ Proje yapısı
 
