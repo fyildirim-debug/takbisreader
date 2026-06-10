@@ -110,8 +110,15 @@ export const BOLUMLER = [
   ]},
 ];
 
-// Editörden gelen yapısal blokları (paragraf/madde + kalın/italik/altçizgi
-// koşuları) docx paragraflarına çevir
+// Editörden gelen yapısal blokları docx paragraflarına çevir.
+// Koşu biçimleri: bold, italic, underline, strike, color (hex), bg (vurgu),
+// size (yarım punto). Blok hizalama: center/right/justify.
+const ALIGN_MAP = {
+  center: AlignmentType.CENTER,
+  right: AlignmentType.RIGHT,
+  justify: AlignmentType.JUSTIFIED,
+};
+
 function bolumParagraflari(blocks) {
   const out = [];
   let sira = 0; // numaralı liste sayacı
@@ -119,22 +126,28 @@ function bolumParagraflari(blocks) {
     const runs = (b.runs || [])
       .filter((r) => r && typeof r.text === 'string')
       .map((r) => new TextRun({
-        text: r.text, font: FONT, size: 21,
+        text: r.text, font: FONT, size: r.size || 21,
         bold: !!r.bold, italics: !!r.italic,
         underline: r.underline ? {} : undefined,
+        strike: !!r.strike,
+        color: /^[0-9a-f]{6}$/i.test(r.color || '') ? r.color : undefined,
+        shading: /^[0-9a-f]{6}$/i.test(r.bg || '')
+          ? { type: ShadingType.CLEAR, fill: r.bg }
+          : undefined,
       }));
+    const alignment = ALIGN_MAP[b.align];
     if (b.type === 'li') {
       if (b.ordered) {
         sira++;
         runs.unshift(new TextRun({ text: `${sira}. `, font: FONT, size: 21 }));
-        out.push(new Paragraph({ spacing: { after: 60 }, indent: { left: 360 }, children: runs }));
+        out.push(new Paragraph({ spacing: { after: 60 }, indent: { left: 360 }, alignment, children: runs }));
       } else {
-        out.push(new Paragraph({ spacing: { after: 60 }, bullet: { level: 0 }, children: runs }));
+        out.push(new Paragraph({ spacing: { after: 60 }, bullet: { level: 0 }, alignment, children: runs }));
       }
     } else {
       sira = 0;
       out.push(new Paragraph({
-        spacing: { after: 80 },
+        spacing: { after: 80 }, alignment,
         children: runs.length ? runs : [new TextRun({ text: '', font: FONT, size: 21 })],
       }));
     }

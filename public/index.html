@@ -91,24 +91,40 @@
   .rapor-head .copybtn.wide:hover { background:var(--accent); }
   .rapor textarea { width:100%; border:0; background:#0c1c2e; color:#e2e8f0; padding:14px 16px; font-family:"Consolas","Courier New",monospace; font-size:12.5px; line-height:1.55; resize:vertical; min-height:280px; outline:none; }
 
+  /* "Raporu doldur" anahtarı */
+  .fill-row { display:flex; align-items:center; gap:12px; margin:16px 0 4px; padding:12px 16px; background:#101d31; border:1px solid var(--line); border-radius:12px; cursor:pointer; user-select:none; }
+  .fill-row .ft { font-weight:700; font-size:14px; color:#bae6fd; }
+  .fill-row .fh { color:#64748b; font-size:11.5px; margin-left:auto; }
+  .switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+  .switch input { display:none; }
+  .switch .sl { position:absolute; inset:0; background:#33435c; border-radius:99px; transition:.2s; }
+  .switch .sl:before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#94a3b8; border-radius:50%; transition:.2s; }
+  .switch input:checked + .sl { background:var(--accent2); }
+  .switch input:checked + .sl:before { transform:translateX(20px); background:#fff; }
+
   /* Uzman bölümleri editör paneli */
-  .editor-panel { border:1px solid var(--line); border-radius:12px; background:#101d31; margin-top:18px; overflow:hidden; }
-  .editor-panel .ep-head { display:flex; align-items:center; gap:10px; padding:12px 16px; background:#16263e; border-bottom:1px solid var(--line); flex-wrap:wrap; }
-  .editor-panel .ep-head .t { font-weight:700; font-size:14px; color:#bae6fd; }
-  .editor-panel .ep-head .hint { color:#64748b; font-size:11.5px; margin-left:auto; }
-  .ed-toolbar { display:flex; gap:4px; padding:8px 16px; border-bottom:1px solid var(--line); background:#0e1a2c; position:sticky; top:0; z-index:5; flex-wrap:wrap; }
-  .ed-toolbar button { background:transparent; border:1px solid var(--line); color:var(--txt); min-width:32px; height:30px; padding:0 9px; border-radius:6px; cursor:pointer; font-size:13px; }
-  .ed-toolbar button:hover { border-color:var(--accent); color:var(--accent); background:var(--card2); }
-  .ed-toolbar .sep { width:1px; background:var(--line); margin:2px 5px; }
+  .editor-panel { border:1px solid var(--line); border-radius:12px; background:#101d31; margin-top:10px; overflow:hidden; }
   .ep-body { padding:14px 16px 18px; }
-  .ed-group { margin-bottom:16px; }
-  .ed-group > .gh { font-size:12.5px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--line); padding-bottom:5px; margin-bottom:8px; }
-  .ed-label { font-size:12.5px; font-weight:600; color:var(--muted); margin:8px 0 4px; }
-  .ed { background:#0b1322; border:1px solid var(--line); border-radius:8px; padding:10px 12px; min-height:64px; font-size:13.5px; line-height:1.6; outline:none; transition:border-color .15s; }
-  .ed:focus { border-color:var(--accent); }
-  .ed:empty:before { content:'Buraya yazın…'; color:#475569; font-style:italic; }
-  .ed ul, .ed ol { margin:4px 0 4px 22px; padding:0; }
-  .ed b, .ed strong { color:#f1f5f9; }
+  .ed-group { margin-bottom:18px; }
+  .ed-group > .gh { font-size:12.5px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--line); padding-bottom:5px; margin-bottom:10px; }
+  .ed-label { font-size:12.5px; font-weight:600; color:var(--muted); margin:10px 0 5px; }
+
+  /* Word tarzı belge kutusu: açık zemin + şerit toolbar */
+  .word-ed { border:1px solid #c8c6c4; border-radius:8px; overflow:hidden; margin-bottom:12px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  .wtb { display:flex; align-items:center; gap:1px; flex-wrap:wrap; padding:4px 6px; background:#f3f2f1; border-bottom:1px solid #e1dfdd; }
+  .wtb button { background:transparent; border:1px solid transparent; color:#323130; min-width:28px; height:28px; padding:0 5px; border-radius:4px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; position:relative; font-family:'Segoe UI',sans-serif; }
+  .wtb button:hover { background:#e1dfdd; border-color:#d2d0ce; }
+  .wtb button.active { background:#cce4f7; border-color:#9fc9eb; color:#005a9e; }
+  .wtb svg { width:15px; height:15px; fill:currentColor; }
+  .wsep { width:1px; height:20px; background:#d2d0ce; margin:0 5px; flex-shrink:0; }
+  .wsize { height:26px; border:1px solid #d2d0ce; border-radius:4px; background:#fff; color:#323130; font-size:12px; padding:0 3px; cursor:pointer; }
+  .wclr { flex-direction:column; gap:0 !important; line-height:1; }
+  .wclr .glyph { font-size:12px; font-weight:700; height:14px; }
+  .wclr .bar { display:block; width:16px; height:4px; border-radius:1px; margin-top:1px; }
+  .wclr input[type=color] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .ed { background:#fff; color:#1b1b1b; padding:12px 16px; min-height:92px; font-family:'Calibri','Segoe UI',sans-serif; font-size:14.5px; line-height:1.55; outline:none; border:0; }
+  .ed:empty:before { content:'Buraya yazın…'; color:#a19f9d; font-style:italic; }
+  .ed ul, .ed ol { margin:4px 0 4px 24px; padding:0; }
 
   .doc-title { font-size:16px; font-weight:700; margin:6px 0 2px; }
   .doc-sub { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
@@ -436,33 +452,115 @@ const ED_BOLUMLER = [
     { key:'emsalAciklama', label:'Emsaller ile ilgili Diğer Açıklamalar:' }]},
 ];
 
-function editorPanelHtml(){
-  const tb = `<div class="ed-toolbar">
-    <button onmousedown="event.preventDefault()" onclick="edCmd('bold')" title="Kalın (Ctrl+B)"><b>K</b></button>
-    <button onmousedown="event.preventDefault()" onclick="edCmd('italic')" title="İtalik (Ctrl+I)"><i>T</i></button>
-    <button onmousedown="event.preventDefault()" onclick="edCmd('underline')" title="Altı çizili (Ctrl+U)"><u>A</u></button>
-    <span class="sep"></span>
-    <button onmousedown="event.preventDefault()" onclick="edCmd('insertUnorderedList')" title="Madde işaretli liste">• Liste</button>
-    <button onmousedown="event.preventDefault()" onclick="edCmd('insertOrderedList')" title="Numaralı liste">1. Liste</button>
-    <span class="sep"></span>
-    <button onmousedown="event.preventDefault()" onclick="edCmd('undo')" title="Geri al">↶</button>
-    <button onmousedown="event.preventDefault()" onclick="edCmd('redo')" title="Yinele">↷</button>
-    <button onmousedown="event.preventDefault()" onclick="edCmd('removeFormat')" title="Biçimlendirmeyi temizle">⌫ Biçim</button>
+// Mini SVG ikonlar (Word şeridi görünümü)
+const WICO = {
+  ul: '<svg viewBox="0 0 16 16"><circle cx="2" cy="3" r="1.3"/><rect x="5.5" y="2.3" width="9.5" height="1.4"/><circle cx="2" cy="8" r="1.3"/><rect x="5.5" y="7.3" width="9.5" height="1.4"/><circle cx="2" cy="13" r="1.3"/><rect x="5.5" y="12.3" width="9.5" height="1.4"/></svg>',
+  ol: '<svg viewBox="0 0 16 16"><text x="0" y="5" font-size="5.5" fill="currentColor">1.</text><rect x="6" y="2.4" width="9" height="1.4"/><text x="0" y="10.6" font-size="5.5" fill="currentColor">2.</text><rect x="6" y="8" width="9" height="1.4"/><text x="0" y="16" font-size="5.5" fill="currentColor">3.</text><rect x="6" y="13.4" width="9" height="1.4"/></svg>',
+  al: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="1.5"/><rect x="1" y="5.5" width="9" height="1.5"/><rect x="1" y="9" width="14" height="1.5"/><rect x="1" y="12.5" width="9" height="1.5"/></svg>',
+  ac: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="1.5"/><rect x="3.5" y="5.5" width="9" height="1.5"/><rect x="1" y="9" width="14" height="1.5"/><rect x="3.5" y="12.5" width="9" height="1.5"/></svg>',
+  ar: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="1.5"/><rect x="6" y="5.5" width="9" height="1.5"/><rect x="1" y="9" width="14" height="1.5"/><rect x="6" y="12.5" width="9" height="1.5"/></svg>',
+  aj: '<svg viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="1.5"/><rect x="1" y="5.5" width="14" height="1.5"/><rect x="1" y="9" width="14" height="1.5"/><rect x="1" y="12.5" width="14" height="1.5"/></svg>',
+};
+
+// Her metin kutusunun kendi Word tarzı şeridi
+function wordToolbarHtml(){
+  return `<div class="wtb">
+    <button data-cmd="undo" title="Geri Al">↶</button>
+    <button data-cmd="redo" title="Yinele">↷</button>
+    <span class="wsep"></span>
+    <select class="wsize" title="Yazı Boyutu" onchange="edSize(this)">
+      <option value="2">10</option><option value="3" selected>12</option>
+      <option value="4">14</option><option value="5">18</option><option value="6">24</option>
+    </select>
+    <span class="wsep"></span>
+    <button data-cmd="bold" title="Kalın (Ctrl+B)"><b>K</b></button>
+    <button data-cmd="italic" title="İtalik (Ctrl+I)"><i>T</i></button>
+    <button data-cmd="underline" title="Altı Çizili (Ctrl+U)"><u>A</u></button>
+    <button data-cmd="strikeThrough" title="Üstü Çizili"><s>ab</s></button>
+    <span class="wsep"></span>
+    <button class="wclr" title="Yazı Rengi"><span class="glyph">A</span><span class="bar" style="background:#C00000"></span><input type="color" value="#C00000" data-role="fore" onchange="edColor(this)"></button>
+    <button class="wclr" title="Vurgu Rengi"><span class="glyph">ab</span><span class="bar" style="background:#FFFF00"></span><input type="color" value="#FFFF00" data-role="back" onchange="edColor(this)"></button>
+    <span class="wsep"></span>
+    <button data-cmd="insertUnorderedList" title="Madde İşaretleri">${WICO.ul}</button>
+    <button data-cmd="insertOrderedList" title="Numaralandırma">${WICO.ol}</button>
+    <span class="wsep"></span>
+    <button data-cmd="justifyLeft" title="Sola Hizala">${WICO.al}</button>
+    <button data-cmd="justifyCenter" title="Ortala">${WICO.ac}</button>
+    <button data-cmd="justifyRight" title="Sağa Hizala">${WICO.ar}</button>
+    <button data-cmd="justifyFull" title="İki Yana Yasla">${WICO.aj}</button>
+    <span class="wsep"></span>
+    <button data-cmd="removeFormat" title="Biçimlendirmeyi Temizle">⌫</button>
   </div>`;
-  const groups = ED_BOLUMLER.map(g =>
-    `<div class="ed-group"><div class="gh">${g.heading}</div>` +
-    g.subs.map(s => `${s.label ? `<div class="ed-label">${s.label}</div>` : ''}<div class="ed" contenteditable="true" data-key="${s.key}"></div>`).join('') +
-    `</div>`).join('');
-  return `<div class="editor-panel">
-    <div class="ep-head"><span class="t">📝 Rapor Bölümleri (Uzman Alanları)</span>
-      <span class="hint">Otomatik kaydedilir · "Word Raporu İndir" çıktısına eklenir</span></div>
-    ${tb}<div class="ep-body">${groups}</div></div>`;
 }
 
-function edCmd(cmd){
-  try { document.execCommand('styleWithCSS', false, false); } catch(e){}
-  document.execCommand(cmd, false, null);
+function editorPanelHtml(){
+  const groups = ED_BOLUMLER.map(g =>
+    `<div class="ed-group"><div class="gh">${g.heading}</div>` +
+    g.subs.map(s => `${s.label ? `<div class="ed-label">${s.label}</div>` : ''}` +
+      `<div class="word-ed">${wordToolbarHtml()}<div class="ed" contenteditable="true" data-key="${s.key}"></div></div>`).join('') +
+    `</div>`).join('');
+  return `<div class="editor-panel" id="editorPanel" style="display:none"><div class="ep-body">${groups}</div></div>`;
 }
+
+function toggleFill(on){
+  const p = document.getElementById('editorPanel');
+  if (p) p.style.display = on ? '' : 'none';
+  const item = history.find(h => h.id === currentId);
+  if (item){ item.raporDoldur = !!on; saveHistory(); }
+}
+
+// --- Şerit komut bağlama ---
+function focusEd(ed){
+  const sel = getSelection();
+  const inside = sel.anchorNode && ed.contains(sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement);
+  if (!inside){
+    ed.focus();
+    const r = document.createRange(); r.selectNodeContents(ed); r.collapse(false);
+    sel.removeAllRanges(); sel.addRange(r);
+  }
+}
+function edExec(ed, cmd, val, css){
+  focusEd(ed);
+  try { document.execCommand('styleWithCSS', false, !!css); } catch(e){}
+  document.execCommand(cmd, false, val ?? null);
+  updateWtbState(ed);
+}
+function edSize(sel){
+  edExec(sel.closest('.word-ed').querySelector('.ed'), 'fontSize', sel.value, false);
+}
+function edColor(inp){
+  const ed = inp.closest('.word-ed').querySelector('.ed');
+  inp.parentElement.querySelector('.bar').style.background = inp.value;
+  if (inp.dataset.role === 'fore') edExec(ed, 'foreColor', inp.value, false);
+  else { try { edExec(ed, 'hiliteColor', inp.value, true); } catch(e){ edExec(ed, 'backColor', inp.value, true); } }
+}
+const WTB_STATEFUL = ['bold','italic','underline','strikeThrough','insertUnorderedList','insertOrderedList','justifyLeft','justifyCenter','justifyRight','justifyFull'];
+function updateWtbState(ed){
+  const tb = ed.closest('.word-ed')?.querySelector('.wtb');
+  if (!tb) return;
+  tb.querySelectorAll('button[data-cmd]').forEach(b => {
+    if (!WTB_STATEFUL.includes(b.dataset.cmd)) return;
+    let on = false; try { on = document.queryCommandState(b.dataset.cmd); } catch(e){}
+    b.classList.toggle('active', on);
+  });
+  const sz = tb.querySelector('.wsize');
+  if (sz){ try { const v = document.queryCommandValue('fontSize'); if (v && sz.querySelector(`option[value="${v}"]`)) sz.value = v; } catch(e){} }
+}
+currentEl.addEventListener('mousedown', e => {
+  if (e.target.closest('.wtb button') && !e.target.closest('input[type=color]')) e.preventDefault();
+});
+currentEl.addEventListener('click', e => {
+  const btn = e.target.closest('.wtb button[data-cmd]');
+  if (!btn) return;
+  edExec(btn.closest('.word-ed').querySelector('.ed'), btn.dataset.cmd, null, false);
+});
+document.addEventListener('selectionchange', () => {
+  const sel = getSelection();
+  const n = sel.anchorNode;
+  if (!n) return;
+  const ed = (n.nodeType === 1 ? n : n.parentElement)?.closest?.('.ed');
+  if (ed && currentEl.contains(ed)) updateWtbState(ed);
+});
 
 function sanitizeHtml(html){
   const t = document.createElement('div');
@@ -476,7 +574,20 @@ function sanitizeHtml(html){
   return t.innerHTML;
 }
 
-// Editör DOM'unu yapısal bloklara çevir: [{type:'p'|'li', ordered, runs:[{text,bold,italic,underline}]}]
+// Renk değerini hex'e çevir: "rgb(192,0,0)" / "#c00" / "#c00000" -> "c00000"
+function rgb2hex(c){
+  if (!c) return null;
+  const m = String(c).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (m) return [m[1],m[2],m[3]].map(x => (+x).toString(16).padStart(2,'0')).join('');
+  let h = String(c).match(/^#([0-9a-f]{6})$/i); if (h) return h[1].toLowerCase();
+  h = String(c).match(/^#([0-9a-f]{3})$/i); if (h) return h[1].split('').map(x=>x+x).join('').toLowerCase();
+  return null;
+}
+// execCommand fontSize (1-7) -> docx yarım punto
+const FONTSIZE_HALF = { 1:16, 2:20, 3:21, 4:24, 5:36, 6:48, 7:72 };
+
+// Editör DOM'unu yapısal bloklara çevir:
+// [{type:'p'|'li', ordered, align, runs:[{text,bold,italic,underline,strike,color,bg,size}]}]
 function editorToBlocks(root){
   const blocks = [];
   function collectRuns(node, fmt, lines){
@@ -487,17 +598,33 @@ function editorToBlocks(root){
     if (n === 'B' || n === 'STRONG') f.bold = true;
     if (n === 'I' || n === 'EM') f.italic = true;
     if (n === 'U') f.underline = true;
+    if (n === 'S' || n === 'STRIKE' || n === 'DEL') f.strike = true;
+    if (n === 'FONT'){
+      const c = rgb2hex(node.getAttribute('color')); if (c) f.color = c;
+      const sz = FONTSIZE_HALF[+node.getAttribute('size')]; if (sz) f.size = sz;
+    }
     if (node.style){
-      if (node.style.fontWeight === 'bold' || +node.style.fontWeight >= 600) f.bold = true;
-      if (node.style.fontStyle === 'italic') f.italic = true;
-      if ((node.style.textDecoration || '').includes('underline')) f.underline = true;
+      const st = node.style;
+      if (st.fontWeight === 'bold' || +st.fontWeight >= 600) f.bold = true;
+      if (st.fontStyle === 'italic') f.italic = true;
+      const td = (st.textDecoration || st.textDecorationLine || '');
+      if (td.includes('underline')) f.underline = true;
+      if (td.includes('line-through')) f.strike = true;
+      const c = rgb2hex(st.color); if (c) f.color = c;
+      const bg = rgb2hex(st.backgroundColor); if (bg && bg !== 'ffffff') f.bg = bg;
+      if (st.fontSize){ const px = parseFloat(st.fontSize); if (px) f.size = Math.round(px * 1.5); }
     }
     node.childNodes.forEach(c => collectRuns(c, f, lines));
   }
+  function blockAlign(el){
+    const a = (el.style && el.style.textAlign) || el.getAttribute?.('align') || '';
+    return ['center','right','justify'].includes(a) ? a : undefined;
+  }
   function handleBlock(el, li, ordered){
+    const align = blockAlign(el);
     const lines = [[]];
     el.childNodes.forEach(c => collectRuns(c, {}, lines));
-    lines.forEach(runs => { if (runs.length || !li) blocks.push({ type: li ? 'li' : 'p', ordered: !!ordered, runs }); });
+    lines.forEach(runs => { if (runs.length || !li) blocks.push({ type: li ? 'li' : 'p', ordered: !!ordered, align, runs }); });
   }
   root.childNodes.forEach(node => {
     if (node.nodeType === 3){ if (node.textContent.trim()) blocks.push({ type:'p', runs:[{ text: node.textContent }] }); return; }
@@ -546,6 +673,11 @@ function renderCurrent(){
       <textarea id="raporText" spellcheck="false">${esc(rapor)}</textarea>
     </div>
 
+    <div class="fill-row" onclick="if(!event.target.closest('.switch'))document.getElementById('fillToggle').click()">
+      <label class="switch" onclick="event.stopPropagation()"><input type="checkbox" id="fillToggle" onchange="toggleFill(this.checked)"><span class="sl"></span></label>
+      <span class="ft">📝 Raporu Doldur</span>
+      <span class="fh">Uzman alanlarını aç — yazdıkların Word raporuna eklenir</span>
+    </div>
     ${editorPanelHtml()}
 
     <div class="section"><h3>Tapu Kayıt Bilgisi</h3>${kvBlock(v.tapuKayit, KAYIT_LABELS)}</div>
@@ -560,6 +692,13 @@ function renderCurrent(){
     const html = saved[ed.dataset.key];
     if (html) ed.innerHTML = sanitizeHtml(html);
   });
+  // Panel: kullanıcı tercihi veya içerik varsa açık gelsin
+  const hasContent = Object.values(saved).some(h => h && String(h).replace(/<[^>]+>/g,'').trim());
+  const open = item.raporDoldur === true || (item.raporDoldur === undefined && hasContent);
+  const ft = document.getElementById('fillToggle');
+  const ep = document.getElementById('editorPanel');
+  if (ft) ft.checked = open;
+  if (ep) ep.style.display = open ? '' : 'none';
   window.scrollTo(0,0);
 }
 
