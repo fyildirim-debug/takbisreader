@@ -35,9 +35,12 @@ const upload = multer({
   },
 });
 
+// Sağlık kontrolü — ziyaret SAYILMAZ (Docker healthcheck / izleme araçları için)
+app.get('/healthz', (req, res) => res.type('text/plain').send('ok'));
+
 // Ana sayfa ziyaretini say (statik servisten önce), sonra index.html'i sun
 app.get('/', (req, res, next) => {
-  try { recordVisit(req.ip); } catch { /* yoksay */ }
+  try { recordVisit(req.ip, req.headers['user-agent']); } catch { /* yoksay */ }
   next();
 });
 
@@ -85,7 +88,14 @@ app.post('/api/parse', upload.array('files', 50), async (req, res) => {
     }
   }
 
-  try { recordParse(results.filter((r) => r.basarili).length); } catch { /* yoksay */ }
+  try {
+    recordParse(
+      results.filter((r) => r.basarili).length,
+      req.ip,
+      req.headers['user-agent'],
+      results.map((r) => r.dosyaAdi),
+    );
+  } catch { /* yoksay */ }
   res.json({ adet: results.length, sonuclar: results });
 });
 
