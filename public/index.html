@@ -963,26 +963,24 @@ function samplePoints(geometry, merkez){
           }
           return inq;
         };
-        // ÖNCE içe çekilmiş köşeler (kenardaki bloklar — ör. D) iki kademede
-        for (const f of [0.75, 0.5]) {
-          for (let i=0;i<ring.length;i++){
-            const [x,y] = ring[i];
-            pts.push([ +(cy+(y-cy)*f).toFixed(6), +(cx+(x-cx)*f).toFixed(6) ]);
-          }
-        }
-        // SONRA poligon içi ızgara (iç bloklar — ör. C)
-        const N = 5;
+        // ÖNCE poligon içi 6x6 ızgara — parseldeki tüm blokları (A/B/C/D) kapsar
+        const N = 6;
         for (let a=1;a<=N;a++) for (let b=1;b<=N;b++){
           const x = minx+(maxx-minx)*a/(N+1), y = miny+(maxy-miny)*b/(N+1);
           if (inside(x,y)) pts.push([ +y.toFixed(6), +x.toFixed(6) ]);
         }
+        // SONRA içe çekilmiş köşeler (kenardaki bloklar için yedek kapsama)
+        for (let i=0;i<ring.length;i++){
+          const [x,y] = ring[i];
+          pts.push([ +(cy+(y-cy)*0.7).toFixed(6), +(cx+(x-cx)*0.7).toFixed(6) ]);
+        }
       }
     }
   } catch(e){}
-  // tekilleştir, en fazla 22 nokta
+  // tekilleştir, en fazla 30 nokta
   const seen = new Set(), out = [];
   for (const p of pts){ const k=p[0]+','+p[1]; if(!seen.has(k)){ seen.add(k); out.push(p); } }
-  return out.slice(0,22);
+  return out.slice(0,30);
 }
 
 async function fetchKonum(item){
