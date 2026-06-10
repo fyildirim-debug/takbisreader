@@ -168,6 +168,7 @@ export async function olusturRapor({ dosyaAdi, raporMetni, tapuKayit = {}, mulki
   ];
   if (konum?.pafta) basRows.push(['Pafta No', konum.pafta]);
   if (konum?.koordinat) basRows.push(['Koordinat (Enlem, Boylam)', konum.koordinat]);
+  if (konum?.uavt) basRows.push(['UAVT (Bina/B.B. Kodu)', konum.uavt]);
   if (konum?.adres) basRows.push(['Adres (OSM)', konum.adres]);
 
   const children = [
