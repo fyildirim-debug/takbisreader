@@ -942,6 +942,31 @@ function konumHtml(item){
   return kv + links + harita + uavt + cevre;
 }
 
+// Parsel poligonundan örnek koordinatlar (merkez + içe çekilmiş köşeler).
+// Çok bloklu parsellerde her blok farklı noktaya denk geldiğinden hepsini yakalar.
+function samplePoints(geometry, merkez){
+  const pts = [];
+  if (merkez) pts.push([merkez.lat, merkez.lon]);
+  try {
+    if (geometry && geometry.coordinates){
+      const ring = geometry.type === 'MultiPolygon' ? geometry.coordinates[0][0] : geometry.coordinates[0];
+      if (Array.isArray(ring) && ring.length){
+        const cx = ring.reduce((s,c)=>s+c[0],0)/ring.length;
+        const cy = ring.reduce((s,c)=>s+c[1],0)/ring.length;
+        const step = Math.max(1, Math.floor(ring.length/8));
+        for (let i=0;i<ring.length;i+=step){
+          const [x,y] = ring[i];
+          pts.push([ +(cy+(y-cy)*0.6).toFixed(6), +(cx+(x-cx)*0.6).toFixed(6) ]);
+        }
+      }
+    }
+  } catch(e){}
+  // tekilleştir, en fazla 10 nokta
+  const seen = new Set(), out = [];
+  for (const p of pts){ const k=p[0]+','+p[1]; if(!seen.has(k)){ seen.add(k); out.push(p); } }
+  return out.slice(0,10);
+}
+
 async function fetchKonum(item){
   const t = item.veri.tapuKayit;
   const [il, ilce] = String(t.ilIlce||'').split('/');
@@ -967,7 +992,9 @@ async function fetchKonum(item){
     }
   }
   if (j){
-    // localStorage şişmesin: çok büyük geometrileri saklama
+    // Çok bloklu parseller için parselin farklı noktalarından örnek koordinatlar
+    j.points = samplePoints(j.geometry, j.merkez);
+    // localStorage şişmesin: çok büyük geometrileri saklama (noktalar zaten çıkarıldı)
     if (j.geometry && JSON.stringify(j.geometry).length > 20000) delete j.geometry;
     item.konum = j; delete item.konumHata;
   }
@@ -1080,7 +1107,12 @@ function cevreParagraf(item){
 // TAKBIS "Blok/Kat/Giriş/BBNo" -> { blok, kat, bbno }
 function takbisKat(t){
   const parts = String(t.blokKatGiris||'').split('/');
-  return { blok:(parts[0]||'').trim(), kat:(parts[1]||'').trim(), bbno:(parts[3]||'').trim() };
+  return { blok:(parts[0]||'').trim().toLocaleUpperCase('tr-TR'), kat:(parts[1]||'').trim(), bbno:(parts[3]||'').trim() };
+}
+// "D BLOK" / "D-Blok" / "D" -> "D"
+function blokHarf(s){
+  const m = String(s||'').toLocaleUpperCase('tr-TR').match(/([A-ZÇĞİÖŞÜ0-9]+)\s*BLOK|^([A-ZÇĞİÖŞÜ0-9]+)$/);
+  return (m && (m[1]||m[2])) ? (m[1]||m[2]) : String(s||'').trim().toLocaleUpperCase('tr-TR');
 }
 
 function uavtHtml(item){
@@ -1088,7 +1120,7 @@ function uavtHtml(item){
   let secilen = '';
   if (sel){
     secilen = `<div class="uavt-sel">✓ Seçili UAVT: <b class="mono-uavt">${esc(sel.uavt)}</b>
-      <span style="color:var(--muted)">· Kat ${esc(sel.kat||'-')} · İç Kapı ${esc(sel.icKapi||'-')} · ${esc(sel.kullanim||'')}</span>
+      <span style="color:var(--muted)">· ${sel.blok?esc(blokHarf(sel.blok))+' Blok · ':''}Kat ${esc(sel.kat||'-')} · İç Kapı ${esc(sel.icKapi||'-')} · ${esc(sel.kullanim||'')}</span>
       <button class="copybtn" title="UAVT kopyala" onclick="doCopy('${esc(sel.uavt)}', this)">⧉</button>
       <button class="cv-mini" style="margin-left:8px" onclick="uavtTemizle()">değiştir</button>
       <div style="color:#7c8aa0;font-size:11.5px;margin-top:3px">${esc(sel.adres||'')}</div></div>`;
@@ -1097,16 +1129,23 @@ function uavtHtml(item){
   if (!sel){
     if (item.uavtListe && item.uavtListe.length){
       const tk = takbisKat(item.veri.tapuKayit);
+      const blokVar = item.uavtListe.some(b => blokHarf(b.blok));
+      const tkBlokListede = !tk.blok || item.uavtListe.some(b => blokHarf(b.blok) === tk.blok);
       const rows = item.uavtListe.map((b,i) => {
-        const esles = tk.kat && String(b.kat) === String(tk.kat);
-        return `<tr class="${esles?'uavt-match':''}" onclick="secUavt(${i})">
-          <td class="mono-uavt">${esc(b.uavt)}</td><td>${esc(b.kat)||'-'}</td><td>${esc(b.icKapi)||'-'}</td>
-          <td>${esc(b.disKapi)||'-'}</td><td>${esc(b.kullanim)||'-'}</td><td>${esc(b.site||b.blok||'')}</td>
+        const blokEsles = tk.blok && blokHarf(b.blok) === tk.blok;
+        const katEsles = tk.kat && String(b.kat) === String(tk.kat);
+        // Blok varsa: blok+kat eşleşmesi tam eşleşme; blok yoksa sadece kat
+        const tam = (tk.blok ? blokEsles : true) && katEsles;
+        return `<tr class="${tam?'uavt-match':''}" onclick="secUavt(${i})">
+          <td>${esc(blokHarf(b.blok))||'-'}</td><td class="mono-uavt">${esc(b.uavt)}</td><td>${esc(b.kat)||'-'}</td><td>${esc(b.icKapi)||'-'}</td>
+          <td>${esc(b.disKapi)||'-'}</td><td>${esc(b.kullanim)||'-'}</td>
           <td><button class="uavt-sec" onclick="event.stopPropagation();secUavt(${i})">Seç</button></td></tr>`;
       }).join('');
-      const tkInfo = tk.kat ? `<span style="color:var(--muted);font-size:11.5px">(TAKBIS: Kat ${esc(tk.kat)}${tk.bbno?' · BB '+esc(tk.bbno):''} — eşleşenler vurgulu)</span>` : '';
-      liste = `<div style="margin-top:8px">${tkInfo}<div class="uavt-scroll"><table>
-        <thead><tr><th>UAVT</th><th>Kat</th><th>İç Kapı</th><th>Dış Kapı</th><th>Kullanım</th><th>Site/Blok</th><th></th></tr></thead>
+      const tkInfo = `<span style="color:var(--muted);font-size:11.5px">TAKBIS: ${tk.blok?'<b style="color:#bae6fd">'+esc(tk.blok)+' Blok</b> · ':''}Kat ${esc(tk.kat)||'?'}${tk.bbno?' · BB '+esc(tk.bbno):''} — eşleşen satır vurgulu</span>`;
+      const uyari = (tk.blok && !tkBlokListede)
+        ? `<div class="empty" style="color:var(--amber);margin-top:6px">⚠ TAKBIS'teki <b>${esc(tk.blok)} Blok</b> listede görünmüyor. Parselde çok blok var; "↻ Tekrar sorgula" ile farklı noktalar denenir veya konumu haritadan doğrulayın.</div>` : '';
+      liste = `<div style="margin-top:8px">${tkInfo}${uyari}<div class="uavt-scroll"><table>
+        <thead><tr><th>Blok</th><th>UAVT</th><th>Kat</th><th>İç Kapı</th><th>Dış Kapı</th><th>Kullanım</th><th></th></tr></thead>
         <tbody>${rows}</tbody></table></div></div>`;
     } else if (item.uavtHata) {
       const t = item.veri.tapuKayit;
@@ -1135,7 +1174,12 @@ async function getirUavt(btn){
   const { lat, lon } = item.konum.merkez;
   btn.textContent = '⏳ NVİ sorgulanıyor…'; btn.disabled = true;
   try {
-    const r = await fetch(`/api/uavt?lat=${lat}&lon=${lon}`);
+    const points = (item.konum.points && item.konum.points.length) ? item.konum.points : [[lat, lon]];
+    const r = await fetch('/api/uavt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points }),
+    });
     const txt = await r.text();
     let j = null; try { j = JSON.parse(txt); } catch(_) {}
     if (!r.ok || !j) throw new Error((j && j.error) || 'NVİ sunucudan yanıt alınamadı (engel/zaman aşımı)');

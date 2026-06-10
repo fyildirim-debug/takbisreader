@@ -276,10 +276,9 @@ async function trProxyList() {
   return list;
 }
 
-// Tek bir yol (proxy veya doğrudan) üzerinden tam NVİ akışı: auth + numarataj
-async function nviFlow(lat, lon, dispatcher) {
+// NVİ oturumu (cookie + anti-forgery token) — verilen yol (proxy/doğrudan) üzerinden
+async function nviAuthVia(dispatcher) {
   const base = dispatcher ? { dispatcher } : {};
-  // 1) Oturum: cookie + anti-forgery token
   const pg = await ufetch(`${NVI_BASE}/VatandasIslemleri/AdresSorgu`, {
     ...base,
     headers: { ...NVI_BROWSER, 'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none' },
@@ -288,7 +287,12 @@ async function nviFlow(lat, lon, dispatcher) {
   const cookie = (pg.headers.getSetCookie ? pg.headers.getSetCookie() : []).map((c) => c.split(';')[0]).join('; ');
   const token = ((await pg.text()).match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/) || [])[1] || '';
   if (!cookie || !token) throw new Error('oturum/token alınamadı');
-  // 2) Numarataj: koordinattan bağımsız bölümler (NVİ parametreleri TERS)
+  return { cookie, token };
+}
+
+// Tek koordinat için numarataj (bağımsız bölüm listesi) — NVİ parametreleri TERS
+async function nviNumarataj(dispatcher, cookie, token, lat, lon) {
+  const base = dispatcher ? { dispatcher } : {};
   const r = await ufetch(`${NVI_BASE}/Harita/NumaratajListesiByGeometry`, {
     ...base,
     method: 'POST',
@@ -310,6 +314,14 @@ async function nviFlow(lat, lon, dispatcher) {
   const j = await r.json();
   if (j && j.success === false) throw new Error(j.message || 'NVİ hata');
   return j;
+}
+
+// Bir yolu (proxy/doğrudan) tek noktayla dene: çalışırsa oturumu+sonucu döndür
+async function routeTry(proxy, lat, lon) {
+  const dispatcher = agentFor(proxy);
+  const { cookie, token } = await nviAuthVia(dispatcher);
+  const j = await nviNumarataj(dispatcher, cookie, token, lat, lon);
+  return { proxy, dispatcher, cookie, token, j };
 }
 
 function parseBB(j) {
@@ -339,34 +351,55 @@ function agentFor(proxy) {
   return agentCache.get(proxy);
 }
 
-export async function uavtSorgu(lat, lon) {
-  const key = `u|${(+lat).toFixed(6)}|${(+lon).toFixed(6)}`;
+// points: [[lat,lon], ...] — ilk nokta parsel merkezi; çok bloklu parsellerde
+// farklı noktalar farklı blokları (A/B/C/D) yakalar.
+export async function uavtSorgu(points) {
+  if (!Array.isArray(points) || !points.length) throw new Error('Koordinat yok');
+  const [lat0, lon0] = points[0];
+  const key = `u|${(+lat0).toFixed(6)}|${(+lon0).toFixed(6)}|${points.length}`;
   const hit = cGet(key);
   if (hit) return hit;
 
-  // Denenecek yollar: önce env proxy / son çalışan proxy, sonra doğrudan, sonra ücretsiz TR proxy'ler
+  // 1) Çalışan yolu bul (ilk nokta ile): env proxy / son çalışan / doğrudan / ücretsiz TR proxy'ler
   const candidates = [];
   if (process.env.NVI_PROXY) candidates.push(process.env.NVI_PROXY.replace(/^https?:\/\//, ''));
   if (workingProxy) candidates.push(workingProxy);
-  candidates.push(null); // doğrudan (sunucu IP'si — engelli olabilir)
+  candidates.push(null);
   const proxies = await trProxyList();
   for (const p of proxies) if (p !== workingProxy) candidates.push(p);
 
-  // İlk 16 yolu paralel dene; ilk geçerli yanıt kazanır
-  const batch = candidates.slice(0, 16);
-  const attempts = batch.map((p) =>
-    nviFlow(lat, lon, agentFor(p)).then((j) => ({ j, proxy: p })),
-  );
-
-  let win;
+  let route;
   try {
-    win = await Promise.any(attempts);
+    route = await Promise.any(candidates.slice(0, 16).map((p) => routeTry(p, lat0, lon0)));
   } catch {
     throw new Error('NVİ tüm yollardan engellendi/erişilemedi (ücretsiz proxyler tükendi, tekrar deneyin)');
   }
+  workingProxy = route.proxy; // çalışan yolu hatırla
 
-  workingProxy = win.proxy; // çalışan yolu hatırla (null = doğrudan)
-  const liste = parseBB(win.j);
+  // 2) Diğer noktaları aynı oturum/yol üzerinden paralel sorgula (tüm bloklar)
+  const tumJson = [route.j];
+  if (points.length > 1) {
+    const rest = await Promise.allSettled(
+      points.slice(1).map(([la, lo]) => nviNumarataj(route.dispatcher, route.cookie, route.token, la, lo)),
+    );
+    for (const r of rest) if (r.status === 'fulfilled') tumJson.push(r.value);
+  }
+
+  // 3) Birleştir + UAVT'ye göre tekilleştir
+  const seen = new Set();
+  const liste = [];
+  for (const j of tumJson) {
+    for (const bb of parseBB(j)) {
+      if (!bb.uavt || seen.has(bb.uavt)) continue;
+      seen.add(bb.uavt);
+      liste.push(bb);
+    }
+  }
+  // Blok, sonra kat, sonra iç kapıya göre sırala
+  liste.sort((a, b) =>
+    String(a.blok).localeCompare(String(b.blok), 'tr') ||
+    (parseInt(a.kat) || 0) - (parseInt(b.kat) || 0) ||
+    String(a.icKapi).localeCompare(String(b.icKapi), 'tr', { numeric: true }));
   cSet(key, liste, 6 * 3600e3);
   return liste;
 }

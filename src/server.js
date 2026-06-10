@@ -134,15 +134,22 @@ app.get('/api/cevre', async (req, res) => {
   }
 });
 
-// NVİ UAVT sorgusu — koordinattan bağımsız bölümler (captcha yok, önbellekli)
-app.get('/api/uavt', async (req, res) => {
-  const lat = parseFloat(req.query.lat);
-  const lon = parseFloat(req.query.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    return res.status(400).json({ error: 'Geçersiz koordinat' });
+// NVİ UAVT sorgusu — parselin birden çok noktasından bağımsız bölümler (captcha yok)
+app.post('/api/uavt', express.json({ limit: '256kb' }), async (req, res) => {
+  let points = req.body && Array.isArray(req.body.points) ? req.body.points : null;
+  if (!points) {
+    const lat = parseFloat(req.body?.lat);
+    const lon = parseFloat(req.body?.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) points = [[lat, lon]];
   }
+  // güvenlik: sayısal, en fazla 12 nokta
+  points = (points || [])
+    .map((p) => [parseFloat(p[0]), parseFloat(p[1])])
+    .filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))
+    .slice(0, 12);
+  if (!points.length) return res.status(400).json({ error: 'Geçersiz koordinat' });
   try {
-    const liste = await uavtSorgu(lat, lon);
+    const liste = await uavtSorgu(points);
     res.json({ liste });
   } catch (err) {
     res.status(502).json({ error: err.message });
