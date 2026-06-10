@@ -353,12 +353,19 @@ function agentFor(proxy) {
 
 // points: [[lat,lon], ...] — ilk nokta parsel merkezi; çok bloklu parsellerde
 // farklı noktalar farklı blokları (A/B/C/D) yakalar.
-export async function uavtSorgu(points) {
+export async function uavtSorgu(points, force = false) {
   if (!Array.isArray(points) || !points.length) throw new Error('Koordinat yok');
   const [lat0, lon0] = points[0];
   const key = `u|${(+lat0).toFixed(6)}|${(+lon0).toFixed(6)}|${points.length}`;
-  const hit = cGet(key);
-  if (hit) return hit;
+  if (force) {
+    // "Tekrar sorgula": önbelleği, proxy listesini ve çalışan proxy'yi sıfırla → sıfırdan dene
+    cache.delete(key);
+    cache.delete('trproxies');
+    workingProxy = null;
+  } else {
+    const hit = cGet(key);
+    if (hit) return hit;
+  }
 
   // 1) Çalışan yolu bul (ilk nokta ile): env proxy / son çalışan / doğrudan / ücretsiz TR proxy'ler
   const candidates = [];

@@ -1176,25 +1176,26 @@ function uavtHtml(item){
       liste = `<div class="empty">Bu koordinatta NVİ adres kaydı bulunamadı (boş arsa/inşaat halinde olabilir).
         Konumu doğrulayıp tekrar deneyin.</div>`;
     }
-    const btnTxt = item.uavtListe ? '↻ Tekrar sorgula' : '🏷 UAVT Sorgula (NVİ)';
+    const tekrar = !!(item.uavtListe || item.uavtHata);
+    const btnTxt = tekrar ? '↻ Tekrar sorgula (önbelleği temizle)' : '🏷 UAVT Sorgula (NVİ)';
     liste += `<div class="cv-actions" style="margin-top:10px">
-      <button class="copybtn wide" onclick="getirUavt(this)">${btnTxt}</button>
+      <button class="copybtn wide" onclick="getirUavt(this, ${tekrar ? 'true' : 'false'})">${btnTxt}</button>
       <span style="color:var(--muted);font-size:11.5px">Koordinattaki bağımsız bölümleri UAVT kodlarıyla listeler (captcha yok)</span></div>`;
   }
   return `<div class="cevre-box"><b style="font-size:13px">🏷 UAVT / Adres Kodu (NVİ)</b>${secilen}${liste}</div>`;
 }
 
-async function getirUavt(btn){
+async function getirUavt(btn, force){
   const item = history.find(h => h.id === currentId);
   if (!item || !item.konum?.merkez) return;
   const { lat, lon } = item.konum.merkez;
-  btn.textContent = '⏳ NVİ sorgulanıyor…'; btn.disabled = true;
+  btn.textContent = force ? '⏳ Yeniden sorgulanıyor…' : '⏳ NVİ sorgulanıyor…'; btn.disabled = true;
   try {
     const points = (item.konum.points && item.konum.points.length) ? item.konum.points : [[lat, lon]];
     const r = await fetch('/api/uavt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ points }),
+      body: JSON.stringify({ points, nocache: !!force }),
     });
     const txt = await r.text();
     let j = null; try { j = JSON.parse(txt); } catch(_) {}
