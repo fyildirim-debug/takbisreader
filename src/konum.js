@@ -247,13 +247,14 @@ const NVI_BROWSER = {
 // ---- Ücretsiz Türkiye proxy listesi (NVİ devlet IP engelini aşmak için) ----
 let workingProxy = null; // son çalışan proxy (öncelikli denenir)
 
-async function trProxyList() {
-  const hit = cGet('trproxies');
-  if (hit) return hit;
+async function trProxyListFresh() {
   const srcs = [
     'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=tr',
-    'https://proxylist.geonode.com/api/proxy-list?country=TR&protocols=http,https&limit=100&page=1&sort_by=lastChecked&sort_type=desc',
+    'https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&country=tr&protocol=http&proxy_format=ipport&format=text',
+    'https://proxylist.geonode.com/api/proxy-list?country=TR&protocols=http,https&limit=200&page=1&sort_by=lastChecked&sort_type=desc',
     'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/countries/TR/data.txt',
+    'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt', // ülke filtresiz; doğrulama elerse kalanı TR
+    'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt',
   ];
   const set = new Set();
   for (const s of srcs) {
@@ -271,10 +272,44 @@ async function trProxyList() {
       }
     } catch { /* kaynak atlanır */ }
   }
-  const list = [...set];
+  return [...set];
+}
+
+async function trProxyList() {
+  const hit = cGet('trproxies');
+  if (hit) return hit;
+  const list = await trProxyListFresh();
   cSet('trproxies', list, 10 * 60e3);
   return list;
 }
+
+// ---- Arka plan proxy sağlık kontrolü: NVİ'ye erişebilen proxy havuzu ----
+let goodProxies = [];       // NVİ auth'u geçen, doğrulanmış proxy'ler
+let validating = false;
+
+async function validateProxies() {
+  if (validating) return;
+  validating = true;
+  try {
+    const list = await trProxyListFresh();
+    // önce mevcut iyi proxy'ler tekrar test edilsin, sonra yeniler
+    const adaylar = [...new Set([...goodProxies, ...list])].slice(0, 40);
+    const sonuc = await Promise.allSettled(
+      adaylar.map(async (p) => {
+        await nviAuthVia(agentFor(p)); // auth geçerse proxy NVİ'ye erişebiliyor
+        return p;
+      }),
+    );
+    const ok = sonuc.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+    if (ok.length) goodProxies = ok.slice(0, 12);
+  } catch { /* yoksay */ } finally {
+    validating = false;
+  }
+}
+
+// Açılışta + periyodik olarak (her 3 dk) proxy havuzunu tazele
+validateProxies();
+setInterval(validateProxies, 3 * 60e3).unref?.();
 
 // NVİ oturumu (cookie + anti-forgery token) — verilen yol (proxy/doğrudan) üzerinden
 async function nviAuthVia(dispatcher) {
@@ -367,19 +402,22 @@ export async function uavtSorgu(points, force = false) {
     if (hit) return hit;
   }
 
-  // 1) Çalışan yolu bul (ilk nokta ile): env proxy / son çalışan / doğrudan / ücretsiz TR proxy'ler
+  // 1) Çalışan yolu bul. Öncelik: env proxy -> doğrulanmış havuz -> son çalışan
+  //    -> doğrudan -> ham TR proxy listesi
   const candidates = [];
-  if (process.env.NVI_PROXY) candidates.push(process.env.NVI_PROXY.replace(/^https?:\/\//, ''));
-  if (workingProxy) candidates.push(workingProxy);
-  candidates.push(null);
-  const proxies = await trProxyList();
-  for (const p of proxies) if (p !== workingProxy) candidates.push(p);
+  const ekle = (p) => { if (!candidates.includes(p)) candidates.push(p); };
+  if (process.env.NVI_PROXY) ekle(process.env.NVI_PROXY.replace(/^https?:\/\//, ''));
+  for (const p of goodProxies) ekle(p);     // arka planda NVİ'ye erişebildiği doğrulanmış
+  if (workingProxy) ekle(workingProxy);
+  ekle(null);                                // doğrudan (sunucu IP'si)
+  for (const p of await trProxyList()) ekle(p);
 
   let route;
   try {
-    route = await Promise.any(candidates.slice(0, 16).map((p) => routeTry(p, lat0, lon0)));
+    route = await Promise.any(candidates.slice(0, 20).map((p) => routeTry(p, lat0, lon0)));
   } catch {
-    throw new Error('NVİ tüm yollardan engellendi/erişilemedi (ücretsiz proxyler tükendi, tekrar deneyin)');
+    validateProxies(); // havuzu arka planda tazele (bekleme)
+    throw new Error('NVİ tüm yollardan engellendi/erişilemedi — birkaç saniye sonra "Tekrar sorgula" deyin');
   }
   workingProxy = route.proxy; // çalışan yolu hatırla
 
