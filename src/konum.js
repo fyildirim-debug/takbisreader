@@ -12,6 +12,7 @@
 const TKGM = 'https://cbsapi.tkgm.gov.tr/megsiswebapi.v3/api';
 const UA_TKGM = { 'User-Agent': 'Mozilla/5.0 (TAKBIS-Reader; +https://takbis.arnexlab.com)' };
 const UA_OSM = { 'User-Agent': 'TAKBIS-Reader/1.0 (+https://takbis.arnexlab.com)' };
+const UA_NVI = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36' };
 
 // ---- basit TTL önbelleği ----
 const cache = new Map();
@@ -221,4 +222,84 @@ export async function cevreAnaliz(lat, lon, keys = [], radius = 1500) {
   const list = Object.values(best).sort((a, b) => a.mesafe - b.mesafe);
   cSet(key, list, 7 * 24 * 3600e3);
   return list;
+}
+
+// ---------------------------------------------------------------------------
+// NVİ Adres Veri Tabanı (UAVT) — koordinattan bağımsız bölümleri çek
+// Captcha YOK (numarataj uçu). NVİ oturum cookie'si + anti-forgery token
+// gerektirir; CORS kapalı olduğundan sunucu tarafından yapılır, önbelleklenir.
+// ÖNEMLİ: NVİ parametreleri ters bekler -> latitude=BOYLAM, longitude=ENLEM.
+// ---------------------------------------------------------------------------
+const NVI_BASE = 'https://adres.nvi.gov.tr';
+let nviSession = { cookie: '', token: '', exp: 0 };
+
+async function nviAuth() {
+  if (nviSession.exp > Date.now() && nviSession.cookie && nviSession.token) return nviSession;
+  const r = await fetch(`${NVI_BASE}/VatandasIslemleri/AdresSorgu`, { headers: UA_NVI });
+  const cookies = (r.headers.getSetCookie ? r.headers.getSetCookie() : []).map((c) => c.split(';')[0]);
+  const html = await r.text();
+  const token = (html.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/) || [])[1] || '';
+  const cookie = cookies.join('; ');
+  if (!cookie || !token) throw new Error('NVİ oturumu alınamadı');
+  nviSession = { cookie, token, exp: Date.now() + 10 * 60e3 };
+  return nviSession;
+}
+
+export async function uavtSorgu(lat, lon) {
+  const key = `u|${(+lat).toFixed(6)}|${(+lon).toFixed(6)}`;
+  const hit = cGet(key);
+  if (hit) return hit;
+
+  async function call() {
+    const { cookie, token } = await nviAuth();
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const r = await fetch(`${NVI_BASE}/Harita/NumaratajListesiByGeometry`, {
+        method: 'POST',
+        headers: {
+          ...UA_NVI,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          __RequestVerificationToken: token,
+          Cookie: cookie,
+          Referer: `${NVI_BASE}/VatandasIslemleri/AdresSorgu`,
+        },
+        body: `latitude=${lon}&longitude=${lat}`, // NVİ: parametreler ters
+        signal: ctrl.signal,
+      });
+      if (!r.ok) throw new Error('NVİ HTTP ' + r.status);
+      return await r.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  let j;
+  try {
+    j = await call();
+  } catch (e) {
+    nviSession.exp = 0; // oturum bayatlamış olabilir → bir kez yenile
+    j = await call();
+  }
+  if (j && j.success === false) throw new Error(j.message || 'NVİ sorgu hatası');
+
+  const liste = [];
+  for (const b of Array.isArray(j) ? j : []) {
+    for (const x of b.bagimsizBolumler || []) {
+      const a = x.acikAdresModel || {};
+      liste.push({
+        uavt: String(x.adresNo || a.adresNo || ''),
+        kat: x.katNo || '',
+        icKapi: x.icKapiNo || '',
+        disKapi: String(x.disKapiNo || a.disKapiNo1 || ''),
+        kullanim: x.yapiKullanimAmacFormatted || '',
+        site: x.siteAdi || '',
+        blok: x.blokAdi || '',
+        adres: (a.acikAdresAciklama || '').replace(/\s+/g, ' ').trim(),
+      });
+    }
+  }
+  cSet(key, liste, 6 * 3600e3);
+  return liste;
 }

@@ -6,7 +6,7 @@ import path from 'path';
 import { parseTakbis } from './parser.js';
 import { recordVisit, recordParse, renderStatsPage } from './stats.js';
 import { olusturRapor, raporNo } from './rapor.js';
-import { parselSorgu, adresBul, cevreAnaliz } from './konum.js';
+import { parselSorgu, adresBul, cevreAnaliz, uavtSorgu } from './konum.js';
 
 // pdf-parse CommonJS olduğu için require ile yüklüyoruz
 const require = createRequire(import.meta.url);
@@ -129,6 +129,21 @@ app.get('/api/cevre', async (req, res) => {
   try {
     const pois = await cevreAnaliz(lat, lon, keys, req.query.r);
     res.json({ pois });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// NVİ UAVT sorgusu — koordinattan bağımsız bölümler (captcha yok, önbellekli)
+app.get('/api/uavt', async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lon = parseFloat(req.query.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return res.status(400).json({ error: 'Geçersiz koordinat' });
+  }
+  try {
+    const liste = await uavtSorgu(lat, lon);
+    res.json({ liste });
   } catch (err) {
     res.status(502).json({ error: err.message });
   }

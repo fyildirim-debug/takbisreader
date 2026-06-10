@@ -173,8 +173,17 @@
   .konum-links { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
   .konum-links a { color:var(--accent); text-decoration:none; font-size:12.5px; border:1px solid var(--line); padding:5px 12px; border-radius:7px; }
   .konum-links a:hover { border-color:var(--accent); }
-  .uavt-inp { background:#0b1322; border:1px solid var(--line); color:var(--txt); border-radius:6px; padding:4px 9px; font-size:13px; font-family:Consolas,monospace; width:180px; letter-spacing:1px; }
-  .uavt-inp:focus { border-color:var(--accent); outline:none; }
+  .uavt-sel { margin-top:8px; padding:10px 12px; background:#143824; border:1px solid #1f5132; border-radius:8px; font-size:13px; }
+  .mono-uavt { font-family:Consolas,monospace; color:#86efac; letter-spacing:1px; font-size:13.5px; }
+  .uavt-scroll { max-height:280px; overflow:auto; margin-top:6px; border-radius:8px; }
+  .uavt-scroll table { font-size:12.5px; }
+  .uavt-scroll tbody tr { cursor:pointer; }
+  .uavt-scroll tbody tr:hover { background:var(--card2); }
+  .uavt-scroll tr.uavt-match { background:#15304a; }
+  .uavt-scroll tr.uavt-match td:first-child { border-left:3px solid var(--accent); }
+  .uavt-scroll .mono-uavt { color:#7dd3fc; }
+  .uavt-sec { background:var(--accent2); color:#04263a; border:0; border-radius:6px; padding:3px 11px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .uavt-sec:hover { background:var(--accent); }
   .poi-list { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
   .poi-chip { background:#16233a; border:1px solid var(--line); border-radius:99px; padding:4px 12px; font-size:12px; color:#cbd5e1; }
   .poi-chip .m { color:var(--accent); font-weight:700; }
@@ -894,15 +903,15 @@ function konumHtml(item){
     ['Zemin Durumu', esc(k.zeminKmdurum)||'-'],
     koor ? ['Koordinat', `<span id="koorTxt">${koor}</span> <button class="copybtn" style="vertical-align:middle" title="Koordinatı kopyala" onclick="doCopy('${koor}', this)">⧉</button>`] : null,
     k.adres && k.adres.adres ? ['Adres (OSM)', esc(k.adres.adres)] : null,
-    ['UAVT (Bina/B.B. Kodu)', `<input class="uavt-inp" value="${esc(item.uavt||'')}" placeholder="NVİ'den kopyalayıp yapıştırın" maxlength="14" oninput="saveUavt(this.value)">`],
   ].filter(Boolean);
   const kv = `<div class="kv">${rows.map(([a,b])=>`<div class="row"><span class="k">${a}</span><span class="v">${b}</span></div>`).join('')}</div>`;
   const links = `<div class="konum-links">
     ${k.merkez ? `<a href="https://maps.google.com/?q=${k.merkez.lat},${k.merkez.lon}" target="_blank" rel="noopener">🗺 Google Maps</a>` : ''}
     <a href="https://parselsorgu.tkgm.gov.tr" target="_blank" rel="noopener">🏛 TKGM Parsel Sorgu</a>
-    <a href="#" onclick="acNviUavt(event)">🏷 UAVT'yi NVİ'de Aç</a>
+    <a href="https://adres.nvi.gov.tr/VatandasIslemleri/AdresSorgu" target="_blank" rel="noopener">🏛 NVİ Adres Sorgu</a>
   </div>`;
   const harita = k.merkez ? `<div id="parselMap"></div>` : '';
+  const uavt = k.merkez ? uavtHtml(item) : '';
 
   let cevre = '';
   if (k.merkez){
@@ -930,7 +939,7 @@ function konumHtml(item){
       </div>
       ${sonuc}</div>`;
   }
-  return kv + links + harita + cevre;
+  return kv + links + harita + uavt + cevre;
 }
 
 async function fetchKonum(item){
@@ -1068,30 +1077,78 @@ function cevreParagraf(item){
   return `Taşınmazın yakın çevresinde; ${parca} mesafede bulunmaktadır. Bölgeye toplu taşıma araçları ve özel araçlar ile ulaşım mümkündür.`;
 }
 
-function saveUavt(val){
-  const item = history.find(h => h.id === currentId);
-  if (!item) return;
-  item.uavt = String(val||'').replace(/\D/g,'').slice(0,14);
-  saveHistory();
+// TAKBIS "Blok/Kat/Giriş/BBNo" -> { blok, kat, bbno }
+function takbisKat(t){
+  const parts = String(t.blokKatGiris||'').split('/');
+  return { blok:(parts[0]||'').trim(), kat:(parts[1]||'').trim(), bbno:(parts[3]||'').trim() };
 }
 
-// NVİ adres sorgu sayfasını yeni sekmede aç + bölge bilgilerini panoya kopyala
-// (NVİ captcha korumalı; otomatik sorgu yapılamaz — uzman seçimi captcha sonrası tamamlar)
-function acNviUavt(ev){
-  ev.preventDefault();
+function uavtHtml(item){
+  const sel = item.uavtSecili;
+  let secilen = '';
+  if (sel){
+    secilen = `<div class="uavt-sel">✓ Seçili UAVT: <b class="mono-uavt">${esc(sel.uavt)}</b>
+      <span style="color:var(--muted)">· Kat ${esc(sel.kat||'-')} · İç Kapı ${esc(sel.icKapi||'-')} · ${esc(sel.kullanim||'')}</span>
+      <button class="copybtn" title="UAVT kopyala" onclick="doCopy('${esc(sel.uavt)}', this)">⧉</button>
+      <button class="cv-mini" style="margin-left:8px" onclick="uavtTemizle()">değiştir</button>
+      <div style="color:#7c8aa0;font-size:11.5px;margin-top:3px">${esc(sel.adres||'')}</div></div>`;
+  }
+  let liste = '';
+  if (!sel){
+    if (item.uavtListe && item.uavtListe.length){
+      const tk = takbisKat(item.veri.tapuKayit);
+      const rows = item.uavtListe.map((b,i) => {
+        const esles = tk.kat && String(b.kat) === String(tk.kat);
+        return `<tr class="${esles?'uavt-match':''}" onclick="secUavt(${i})">
+          <td class="mono-uavt">${esc(b.uavt)}</td><td>${esc(b.kat)||'-'}</td><td>${esc(b.icKapi)||'-'}</td>
+          <td>${esc(b.disKapi)||'-'}</td><td>${esc(b.kullanim)||'-'}</td><td>${esc(b.site||b.blok||'')}</td>
+          <td><button class="uavt-sec" onclick="event.stopPropagation();secUavt(${i})">Seç</button></td></tr>`;
+      }).join('');
+      const tkInfo = tk.kat ? `<span style="color:var(--muted);font-size:11.5px">(TAKBIS: Kat ${esc(tk.kat)}${tk.bbno?' · BB '+esc(tk.bbno):''} — eşleşenler vurgulu)</span>` : '';
+      liste = `<div style="margin-top:8px">${tkInfo}<div class="uavt-scroll"><table>
+        <thead><tr><th>UAVT</th><th>Kat</th><th>İç Kapı</th><th>Dış Kapı</th><th>Kullanım</th><th>Site/Blok</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+    } else if (item.uavtListe) {
+      liste = `<div class="empty">Bu koordinatta NVİ adres kaydı bulunamadı (boş arsa/inşaat halinde olabilir).
+        Konumu doğrulayıp tekrar deneyin.</div>`;
+    }
+    const btnTxt = item.uavtListe ? '↻ Tekrar sorgula' : '🏷 UAVT Sorgula (NVİ)';
+    liste += `<div class="cv-actions" style="margin-top:10px">
+      <button class="copybtn wide" onclick="getirUavt(this)">${btnTxt}</button>
+      <span style="color:var(--muted);font-size:11.5px">Koordinattaki bağımsız bölümleri UAVT kodlarıyla listeler (captcha yok)</span></div>`;
+  }
+  return `<div class="cevre-box"><b style="font-size:13px">🏷 UAVT / Adres Kodu (NVİ)</b>${secilen}${liste}</div>`;
+}
+
+async function getirUavt(btn){
   const item = history.find(h => h.id === currentId);
-  const t = item?.veri?.tapuKayit || {};
-  const [il, ilce] = String(t.ilIlce||'').split('/');
-  const ozet = [
-    il ? 'İl: ' + il.trim() : '',
-    ilce ? 'İlçe: ' + ilce.trim() : '',
-    t.mahalleKoy ? 'Mahalle/Köy: ' + t.mahalleKoy : '',
-    t.adaParsel ? 'Ada/Parsel: ' + t.adaParsel : '',
-  ].filter(Boolean).join('  ·  ');
-  if (ozet && navigator.clipboard) { try { navigator.clipboard.writeText(ozet); } catch(e){} }
-  window.open('https://adres.nvi.gov.tr/VatandasIslemleri/AdresSorgu', '_blank', 'noopener');
-  alert('NVİ Adres Sorgu sayfası yeni sekmede açıldı.\n\nBölge bilgileri panoya kopyalandı:\n' + (ozet||'(belgede bölge bilgisi yok)') +
-    '\n\nAçılan sayfada İl → İlçe → Mahalle → Yol → Bina → Bağımsız Bölüm seçip "robot değilim" doğrulamasını geçtikten sonra 10 haneli UAVT (Bina/B.B.) kodunu kopyalayıp aşağıdaki "UAVT" kutusuna yapıştırabilirsiniz.');
+  if (!item || !item.konum?.merkez) return;
+  const { lat, lon } = item.konum.merkez;
+  btn.textContent = '⏳ NVİ sorgulanıyor…'; btn.disabled = true;
+  try {
+    const r = await fetch(`/api/uavt?lat=${lat}&lon=${lon}`);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    item.uavtListe = j.liste || [];
+    saveHistory(); refreshKonum(item);
+  } catch(e){
+    btn.textContent = '⚠ Alınamadı — tekrar dene'; btn.disabled = false;
+  }
+}
+
+function secUavt(i){
+  const item = history.find(h => h.id === currentId);
+  if (!item || !item.uavtListe || !item.uavtListe[i]) return;
+  item.uavtSecili = item.uavtListe[i];
+  item.uavt = item.uavtSecili.uavt;
+  item.uavtAdres = item.uavtSecili.adres;
+  saveHistory(); refreshKonum(item);
+}
+function uavtTemizle(){
+  const item = history.find(h => h.id === currentId);
+  if (!item) return;
+  delete item.uavtSecili; delete item.uavt; delete item.uavtAdres;
+  saveHistory(); refreshKonum(item);
 }
 
 function ekleBolge(ev){
@@ -1215,7 +1272,7 @@ async function indirWord(btn){
         konum: (item.konum || item.uavt) ? {
           pafta: item.konum?.pafta || '',
           koordinat: item.konum?.merkez ? `${item.konum.merkez.lat}, ${item.konum.merkez.lon}` : '',
-          adres: item.konum?.adres?.adres || '',
+          adres: item.uavtAdres || item.konum?.adres?.adres || '',
           uavt: item.uavt || '',
         } : undefined,
       }),
