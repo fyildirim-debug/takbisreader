@@ -2,6 +2,26 @@
   "name": "takbis-parser",
   "version": "1.0.0",
   "description": "TAKBIS / Web Tapu PDF belgelerinden taşınmaz, şerh-beyan-irtifak, mülkiyet ve ipotek bilgilerini otomatik çıkaran web uygulaması",
+  "keywords": [
+    "takbis",
+    "tapu",
+    "takyidat",
+    "web-tapu",
+    "pdf-parser",
+    "serh-beyan-irtifak",
+    "ipotek",
+    "haciz",
+    "gayrimenkul-degerleme",
+    "ekspertiz",
+    "tkgm",
+    "parsel-sorgu"
+  ],
+  "homepage": "https://takbisci.com.tr/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fyildirim-debug/takbisreader.git"
+  },
+  "author": "Furkan Yıldırım (https://furkanyildirim.com/)",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

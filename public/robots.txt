@@ -3,4 +3,4 @@ Allow: /
 Disallow: /stats
 Disallow: /api/
 
-Sitemap: https://takbis.arnexlab.com/sitemap.xml
+Sitemap: https://takbisci.com.tr/sitemap.xml
