@@ -10,8 +10,8 @@
  */
 
 const TKGM = 'https://cbsapi.tkgm.gov.tr/megsiswebapi.v3/api';
-const UA_TKGM = { 'User-Agent': 'Mozilla/5.0 (TAKBIS-Reader; +https://takbis.arnexlab.com)' };
-const UA_OSM = { 'User-Agent': 'TAKBIS-Reader/1.0 (+https://takbis.arnexlab.com)' };
+const UA_TKGM = { 'User-Agent': 'Mozilla/5.0 (TAKBIS-Reader; +https://takbisci.com.tr)' };
+const UA_OSM = { 'User-Agent': 'TAKBIS-Reader/1.0 (+https://takbisci.com.tr)' };
 const UA_NVI = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36' };
 
 // ---- basit TTL önbelleği ----

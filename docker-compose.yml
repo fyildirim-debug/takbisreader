@@ -1,5 +1,5 @@
 # Dokploy "Compose" dağıtımı için.
-# Dokploy, Traefik üzerinden takbis.arnexlab.com alan adını bu servise yönlendirir.
+# Dokploy, Traefik üzerinden takbisci.com.tr alan adını bu servise yönlendirir.
 # (Domain & SSL ayarını Dokploy arayüzünden yapın; port 3000.)
 services:
   takbis:
@@ -9,6 +9,10 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3000
+      # /stats paneli kimlik bilgileri: değerleri Dokploy > Environment sekmesinde tanımlayın.
+      # Buraya asla gerçek değer yazmayın — tanımlanmazsa /stats devre dışı kalır.
+      - STATS_USER=${STATS_USER:-}
+      - STATS_PASS=${STATS_PASS:-}
     expose:
       - "3000"
     # Dokploy dışında, doğrudan denemek için yorum satırını açın:

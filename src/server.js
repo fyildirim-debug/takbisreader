@@ -19,9 +19,10 @@ const PORT = process.env.PORT || 3000;
 // Gerçek ziyaretçi IP'si için (Dokploy/Traefik arkasında X-Forwarded-For)
 app.set('trust proxy', true);
 
-// İstatistik panosu kimlik bilgileri (Dokploy'da ortam değişkeniyle değiştirilebilir)
-const STATS_USER = process.env.STATS_USER || 'procodertr';
-const STATS_PASS = process.env.STATS_PASS || '25468546';
+// İstatistik panosu kimlik bilgileri — yalnızca ortam değişkeninden okunur (Dokploy > Environment).
+// Koda şifre gömülmez; tanımlı değilse /stats paneli devre dışı kalır.
+const STATS_USER = process.env.STATS_USER || '';
+const STATS_PASS = process.env.STATS_PASS || '';
 
 // Bellekte tut (diske yazma yok), 25MB sınır, sadece PDF
 const upload = multer({
@@ -47,6 +48,10 @@ app.get('/', (req, res, next) => {
 
 // Basic Auth ile korunan özel istatistik panosu
 function statsAuth(req, res, next) {
+  if (!STATS_USER || !STATS_PASS) {
+    return res.status(503).type('text/plain')
+      .send('İstatistik paneli yapılandırılmamış: STATS_USER ve STATS_PASS ortam değişkenlerini tanımlayın.');
+  }
   const hdr = req.headers.authorization || '';
   const [type, b64] = hdr.split(' ');
   if (type === 'Basic' && b64) {
