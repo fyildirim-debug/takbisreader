@@ -288,14 +288,19 @@ function parseMulkiyet(sectionText) {
 
   // Malik kalıbı: "(SN:42239258) SEFA KARAKUM : KEMAL Oğlu" veya şirket adı
   // Sistem No genelde SN bloğundan hemen önce gelir.
+  // Hisse metrekare değerleriyle bitişik gelebilir: "-1/19424.009424.00Satış"
+  // -> hisse "1/1", metrekare "9424.00", toplam metrekare "9424.00".
+  // Pay/payda tembel (lazy) yazılır ki metrekare grupları hakkını yesin.
   const re =
-    /(\d{6,})?\s*\(SN:(\d+)\)\s*(.+?)\s*-?(\d+\/\d+)(?=[-\s])/g;
+    /(\d{6,})?\s*\(SN:(\d+)\)\s*(.+?)\s*-?(\d+?\/\d+?)(\d+\.\d{2})?(\d+\.\d{2})?(?=[-\sA-Za-zÇĞİÖŞÜçğıöşü])/g;
   let m;
   while ((m = re.exec(flat)) !== null) {
     const sistemNo = (m[1] || '').trim();
     const sn = m[2];
     let malik = m[3].replace(/\s+/g, ' ').trim();
     const hisse = m[4];
+    const metrekare = m[5] || '';
+    const toplamMetrekare = m[6] || '';
 
     // Maliği ad ve baba adına böl (varsa): "SEFA KARAKUM : KEMAL Oğlu"
     let adSoyad = malik;
@@ -306,7 +311,7 @@ function parseMulkiyet(sectionText) {
       babaAdi = parts[1].trim();
     }
 
-    entries.push({ sistemNo, sn, malik, adSoyad, babaAdi, hisse });
+    entries.push({ sistemNo, sn, malik, adSoyad, babaAdi, hisse, metrekare, toplamMetrekare });
   }
 
   // Edinme sebeplerini kabaca eşle (sıra ile)
@@ -327,6 +332,17 @@ function parseMulkiyet(sectionText) {
 // ---------------------------------------------------------------------------
 // 5) İpotek / rehin bilgileri
 // ---------------------------------------------------------------------------
+// Faiz metnini sadeleştir: "yıllık  %70" -> "yıllık %70", satır kırılmasıyla
+// bölünen kelimeleri birleştir ("%19,75akd i" -> "%19,75 akdi")
+function temizFaiz(s) {
+  return String(s || '')
+    .replace(/\s+/g, ' ')
+    .replace(/%\s+(?=\d)/g, '%')
+    .replace(/(\d)(?=[A-Za-zÇĞİÖŞÜçğıöşü])/g, '$1 ')
+    .replace(/\b([A-Za-zÇĞİÖŞÜçğıöşü]{2,}) ([a-zçğıöşü])\b/g, '$1$2')
+    .trim();
+}
+
 function parseIpotek(sectionText) {
   if (!sectionText) return [];
   const entries = [];
@@ -336,30 +352,64 @@ function parseIpotek(sectionText) {
   // borçlu malik tablosudur (onu özetin dışında tutuyoruz).
   // Değerler bitişik gelir:
   //   "(SN:2281342) BANKA A.Ş. ... Evet1500000.00 TLFaizsiz1/1F.B.KNilüfer - 26-08-2021 14:14 - 47623"
-  // faiz: TL ile derece/sıra (n/m) arasındaki ifade. "Faizsiz", "%48",
-  // "yıllık %70", "% 2,5" gibi tek/çok kelimeli biçimleri kapsar. Yüzde sayısı
-  // derece ile bitişik gelebildiği için (%701/0) %\d+ açgözlüdür; derece kısa
-  // kalan paya geri çekilir.
-  const re =
-    /\(SN:(\d+)\)\s*([\s\S]+?)\s*(Evet|Hayır)\s*([\d.,]+)\s*TL\s*((?:[A-Za-zÇĞİÖŞÜçğıöşü]+\s+)*(?:%\s*\d+(?:[.,]\d+)?|[A-Za-zÇĞİÖŞÜçğıöşü]+))?\s*(\d+\/\d+)\s*([\s\S]*?)([A-ZÇĞİÖŞÜ][a-zçğıöşü]+)\s*-\s*(\d{2}-\d{2}-\d{4})\s+(\d{2}:\d{2})\s*-\s*(\d+)/;
-
+  // Faiz tek regex'e sığmadığı için (örn. "Yıllık43,07 (Sabit faiz)",
+  // "%7,68 SABİT", "%19,75akd i") satırı SONDAN çözüyoruz:
+  //   ... <faiz><derece/sıra><süre><kurum> - <tarih> <saat> - <yevmiye>
   const blocks = sectionText.split(/\bIpotek\b/);
   for (const block of blocks) {
     // Özet kısmı: borçlu malik tablosundan önceki bölüm
     const ozet = block.split('İpoteğin Konulduğu')[0];
-    const m = ozet.match(re);
-    if (!m) continue;
+    const flat = ozet.replace(/\s+/g, ' ').trim();
+
+    // 1) Kuyruk: "- tarih saat - yevmiye" her zaman sondadır
+    const tm = flat.match(/-\s*(\d{2}-\d{2}-\d{4})\s+(\d{1,2}:\d{2})\s*-\s*(\d+)\s*$/);
+    if (!tm) continue;
+    const tarih = tm[1], saat = tm[2], yevmiye = tm[3];
+    let rest = flat.slice(0, tm.index).trim();
+
+    // 2) Kurum: süre işaretinin (F.B.K. / F.B.K / FBK) sonrası. Kurum adı
+    //    parantez/rakam/boşluk içerebilir: "Yenişehir(BURSA)",
+    //    "Osmangazi 1.Bölge(Kapatildi)".
+    let sure = '', kurum = '';
+    const sm = rest.match(/F\.?\s?B\.?\s?K\.?/i);
+    if (sm) {
+      sure = 'F.B.K.';
+      kurum = rest.slice(sm.index + sm[0].length).replace(/^[\s.]+/, '').trim();
+      rest = rest.slice(0, sm.index).trim();
+    } else {
+      // Süre yoksa son kelime(ler) kurum kabul edilir
+      const km = rest.match(/([A-Za-zÇĞİÖŞÜçğıöşü0-9.()]+(?:\s+[A-Za-zÇĞİÖŞÜçğıöşü0-9.()]+)*)$/);
+      if (km) { kurum = km[1].trim(); rest = rest.slice(0, km.index).trim(); }
+    }
+
+    // 3) Derece/sıra: sondaki "n/m". Faiz yüzdesiyle bitişik gelebilir
+    //    ("%701/0" = faiz %70, derece 1/0; "% 11,761/0" = faiz %11,76, derece
+    //    1/0): faiz tarafı rakam/virgül/% ile bitiyorsa derece çok haneli
+    //    çıkmış demektir — son hane derece, kalan haneler faize iade edilir.
+    const dm = rest.match(/(\d+)\/(\d+)\s*$/);
+    if (!dm) continue;
+    let derece = dm[1], sira = dm[2];
+    rest = rest.slice(0, dm.index).trim();
+    if (derece.length >= 2 && /[\d%,]$/.test(rest)) {
+      rest += derece.slice(0, -1);
+      derece = derece.slice(-1);
+    }
+
+    // 4) Kalan baş: "(SN:..) alacaklı Evet/Hayır <borç> TL <faiz>"
+    const hm = rest.match(/\(SN:(\d+)\)\s*([\s\S]+?)\s*(Evet|Hayır)\s*([\d.,]+)\s*TL\s*([\s\S]*)$/);
+    if (!hm) continue;
+
     entries.push({
-      alacakli: m[2].replace(/\s+/g, ' ').trim(),
-      musterek: m[3],
-      borc: m[4] + ' TL',
-      faiz: m[5].replace(/\s+/g, ' ').trim(),
-      dereceSira: m[6],
-      sure: m[7].replace(/\s+/g, ' ').trim(),
-      kurum: m[8].trim(),
-      tarih: m[9],
-      saat: m[10],
-      yevmiye: m[11],
+      alacakli: hm[2].replace(/\s+/g, ' ').trim(),
+      musterek: hm[3],
+      borc: hm[4] + ' TL',
+      faiz: temizFaiz(hm[5]),
+      dereceSira: `${derece}/${sira}`,
+      sure,
+      kurum,
+      tarih,
+      saat,
+      yevmiye,
       hisse: parseIpotekHisse(block),
       rehinSerh: parseRehinSerh(block),
     });
@@ -376,7 +426,7 @@ function parseIpotekHisse(block) {
   const flat = hisseOnly.replace(/\s+/g, ' ').replace(/Hisse Bilgisi[\s\S]*?Tarih Yev/, '');
 
   const hisseRe =
-    /(\d+\/\d+)\s*\(SN:(\d+)\)\s*(.+?)\s*([\d.,]+)\s*TL\s*([A-Za-zÇĞİÖŞÜçğıöşü]+)\s*-\s*(\d{2}-\d{2}-\d{4})\s+(\d{2}:\d{2})\s*-\s*(\d+)/;
+    /(\d+\/\d+)\s*\(SN:(\d+)\)\s*(.+?)\s*([\d.,]+)\s*TL\s*([A-Za-zÇĞİÖŞÜçğıöşü0-9.()]+(?:\s+[A-Za-zÇĞİÖŞÜçğıöşü0-9.()]+)*)\s*-\s*(\d{2}-\d{2}-\d{4})\s+(\d{1,2}:\d{2})\s*-\s*(\d+)/;
   const h = flat.match(hisseRe);
   if (!h) return null;
 

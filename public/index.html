@@ -214,6 +214,25 @@
   .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40; }
   .overlay.show { display:block; }
 
+  /* ---------- Güncelleme notları modalı ---------- */
+  .wn-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; align-items:center; justify-content:center; padding:18px; }
+  .wn-overlay.show { display:flex; }
+  .wn-modal { background:var(--card); border:1px solid var(--line); border-radius:14px; max-width:520px; width:100%; max-height:82vh; overflow-y:auto; box-shadow:0 12px 40px rgba(0,0,0,.5); }
+  .wn-head { display:flex; align-items:center; gap:10px; padding:16px 18px 12px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); border-radius:14px 14px 0 0; }
+  .wn-head h2 { margin:0; font-size:16px; }
+  .wn-head .wn-x { margin-left:auto; background:transparent; border:1px solid var(--line); color:var(--muted); width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px; line-height:1; }
+  .wn-head .wn-x:hover { border-color:var(--red); color:var(--red); }
+  .wn-body { padding:14px 18px 6px; }
+  .wn-ver { font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; margin:14px 0 6px; }
+  .wn-ver:first-child { margin-top:0; }
+  .wn-body ul { margin:0; padding-left:18px; }
+  .wn-body li { font-size:13.5px; margin-bottom:6px; color:#cbd5e1; }
+  .wn-foot { padding:12px 18px 16px; }
+  .wn-foot button { width:100%; background:var(--accent2); color:#04263a; border:0; padding:10px; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; }
+  .wn-foot button:hover { background:var(--accent); }
+  .wn-open { margin-left:auto; background:transparent; border:1px solid var(--line); color:var(--muted); border-radius:8px; cursor:pointer; padding:6px 12px; font-size:12.5px; white-space:nowrap; }
+  .wn-open:hover { border-color:var(--accent); color:var(--accent); }
+
   /* ---------- Responsive (tablet / mobil) ---------- */
   @media (max-width: 820px) {
     .menu-toggle { display:inline-flex; align-items:center; justify-content:center; }
@@ -259,7 +278,20 @@
     <h1>TAKBIS / Web Tapu PDF Ayrıştırıcı</h1>
     <div class="sub">PDF yükleyin → takyidat bilgileri çıkarılır + rapora hazır metin oluşturulur</div>
   </div>
+  <button class="wn-open" id="btnWhatsNew" title="Güncelleme notlarını gör">🔔 Yenilikler</button>
 </header>
+
+<div class="wn-overlay" id="wnOverlay">
+  <div class="wn-modal" role="dialog" aria-modal="true" aria-labelledby="wnTitle">
+    <div class="wn-head">
+      <span style="font-size:20px">🔔</span>
+      <h2 id="wnTitle">Güncelleme Notları</h2>
+      <button class="wn-x" id="wnClose" title="Kapat" aria-label="Kapat">✕</button>
+    </div>
+    <div class="wn-body" id="wnBody"></div>
+    <div class="wn-foot"><button id="wnOk">Anladım</button></div>
+  </div>
+</div>
 
 <div class="overlay" id="overlay"></div>
 
@@ -310,6 +342,36 @@
 </div>
 
 <script>
+// ---------- Güncelleme notları (yenilikler modalı) ----------
+// Her sürüm bir kez gösterilir; "🔔 Yenilikler" düğmesiyle her zaman açılabilir.
+const WN_VERSION = '2026-08-12';
+const WN_NOTES = [
+  { ver: '2026-08-12', items: [
+    'İpotek tespiti düzeltildi: faizi "SABİT/değişken/(Sabit faiz)" gibi farklı biçimlerde yazılan veya kurum adı parantez içeren ("Yenişehir(BURSA)" gibi) ipotekler artık listede görünüyor.',
+    'Metrekare değeri hisseyle bitişik yazılan belgelerde mülkiyet bilgisi boş çıkıyordu; düzeltildi.',
+  ]},
+];
+const WN_LS = 'takbis_whatsnew';
+const wnOverlay = document.getElementById('wnOverlay');
+
+function renderWhatsNew(){
+  document.getElementById('wnBody').innerHTML = WN_NOTES.map((n) =>
+    `<div class="wn-ver">Sürüm ${n.ver}</div><ul>${n.items.map((i) => `<li>${i}</li>`).join('')}</ul>`
+  ).join('');
+}
+function openWhatsNew(){ renderWhatsNew(); wnOverlay.classList.add('show'); }
+function closeWhatsNew(){
+  wnOverlay.classList.remove('show');
+  try { localStorage.setItem(WN_LS, WN_VERSION); } catch(e){}
+}
+document.getElementById('btnWhatsNew').addEventListener('click', openWhatsNew);
+document.getElementById('wnClose').addEventListener('click', closeWhatsNew);
+document.getElementById('wnOk').addEventListener('click', closeWhatsNew);
+wnOverlay.addEventListener('click', (e) => { if (e.target === wnOverlay) closeWhatsNew(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeWhatsNew(); });
+// Yeni sürümü görmemiş kullanıcıya otomatik göster
+try { if (localStorage.getItem(WN_LS) !== WN_VERSION) openWhatsNew(); } catch(e){ openWhatsNew(); }
+
 const LS_KEY = 'takbis_history_v1';
 const drop = document.getElementById('drop');
 const fileInput = document.getElementById('fileInput');
