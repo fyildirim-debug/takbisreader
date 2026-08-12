@@ -33,6 +33,11 @@ async function jfetch(url, timeoutMs = 12000, headers = UA_TKGM) {
   try {
     const r = await fetch(url, { headers, signal: ctrl.signal });
     if (!r.ok) throw new Error('HTTP ' + r.status);
+    // WAF/bakım sayfası gibi HTML dönen yanıtları erken yakala; yoksa
+    // r.json() "Unexpected token '<'" gibi anlaşılmaz bir hata verir
+    if (!((r.headers.get('content-type') || '').includes('json'))) {
+      throw new Error('TKGM servisi HTML sayfası döndü (geçici engelleme veya bakım olabilir)');
+    }
     return await r.json();
   } finally {
     clearTimeout(t);
