@@ -873,8 +873,21 @@ async function jget(url, timeoutMs){
   try {
     const r = await fetch(url, { signal: ctrl.signal });
     if (!r.ok) throw new Error('HTTP ' + r.status);
+    // WAF/bakım sayfası gibi HTML dönen yanıtları erken yakala; yoksa
+    // r.json() "Unexpected token '<'" gibi anlaşılmaz bir hata verir
+    const ct = (r.headers.get('content-type') || '');
+    if (!ct.includes('json')) throw new Error('Servis HTML sayfası döndü (geçici engelleme veya bakım olabilir)');
     return await r.json();
   } finally { clearTimeout(t); }
+}
+// Geçici hatalarda (HTML hata sayfası, ağ kopması) kısa bekleyip bir kez tekrar dene
+async function jgetRetry(url, timeoutMs){
+  try { return await jget(url, timeoutMs); }
+  catch(e){
+    if (!/HTML sayfası|HTTP 5|Failed to fetch|abort/i.test(e.message)) throw e;
+    await new Promise((res) => setTimeout(res, 1500));
+    return await jget(url, timeoutMs);
+  }
 }
 
 // TKGM: mahalle ID'leri tarayıcıda önbelleğe alınır (il/ilçe listeleri büyük,
@@ -885,13 +898,13 @@ async function tkgmDirect(il, ilce, mah, ada, parsel){
   try { ids = JSON.parse(localStorage.getItem('tkgm_ids')) || {}; } catch(e){}
   let mahId = ids[key];
   if (!mahId){
-    const iller = (await jget(TKGM_BASE + '/idariYapi/ilListe', 20000)).features;
+    const iller = (await jgetRetry(TKGM_BASE + '/idariYapi/ilListe', 20000)).features;
     const ilRec = iller.find(f => tkgmNorm(f.properties.text) === tkgmNorm(il));
     if (!ilRec) throw new Error('TKGM: il bulunamadı');
-    const ilceler = (await jget(TKGM_BASE + '/idariYapi/ilceListe/' + ilRec.properties.id, 20000)).features;
+    const ilceler = (await jgetRetry(TKGM_BASE + '/idariYapi/ilceListe/' + ilRec.properties.id, 20000)).features;
     const ilceRec = ilceler.find(f => tkgmNorm(f.properties.text) === tkgmNorm(ilce));
     if (!ilceRec) throw new Error('TKGM: ilçe bulunamadı');
-    const mahalleler = (await jget(TKGM_BASE + '/idariYapi/mahalleListe/' + ilceRec.properties.id, 20000)).features;
+    const mahalleler = (await jgetRetry(TKGM_BASE + '/idariYapi/mahalleListe/' + ilceRec.properties.id, 20000)).features;
     const nm = tkgmNorm(mah);
     const mahRec = mahalleler.find(f => tkgmNorm(f.properties.text) === nm) ||
       mahalleler.find(f => { const x = tkgmNorm(f.properties.text); return x.includes(nm) || nm.includes(x); });
@@ -900,7 +913,7 @@ async function tkgmDirect(il, ilce, mah, ada, parsel){
     ids[key] = mahId;
     try { localStorage.setItem('tkgm_ids', JSON.stringify(ids)); } catch(e){}
   }
-  const pj = await jget(`${TKGM_BASE}/parsel/${mahId}/${encodeURIComponent(ada)}/${encodeURIComponent(parsel)}`, 15000);
+  const pj = await jgetRetry(`${TKGM_BASE}/parsel/${mahId}/${encodeURIComponent(ada)}/${encodeURIComponent(parsel)}`, 15000);
   if (!pj || !pj.properties) throw new Error('TKGM: parsel bulunamadı');
   const p = pj.properties;
   let merkez = null, geometry = null;
