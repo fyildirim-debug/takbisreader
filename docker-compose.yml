@@ -13,8 +13,23 @@ services:
       # Buraya asla gerçek değer yazmayın — tanımlanmazsa /stats devre dışı kalır.
       - STATS_USER=${STATS_USER:-}
       - STATS_PASS=${STATS_PASS:-}
+      # İstatistik + KVKK/5651 erişim kayıtlarının yazıldığı dizin (aşağıdaki volume)
+      - DATA_DIR=/app/data
+      # Ters vekil (Traefik) sayısı. Cloudflare gibi ikinci bir katman varsa 2 yapın.
+      # Bu değer X-Forwarded-For zincirinde kaç atlamaya güvenileceğini belirler;
+      # fazla büyütmek istemcinin sahte IP yazdırmasına izin verir.
+      - TRUST_PROXY=${TRUST_PROXY:-1}
+      # Opsiyonel: NVİ (UAVT) sorgusu için sabit çıkış proxy'si
+      - NVI_PROXY=${NVI_PROXY:-}
+    volumes:
+      # KALICILIK: bu volume olmadan her dağıtımda ziyaret istatistikleri ve
+      # KVKK/5651 kapsamındaki erişim kayıtları SİLİNİR.
+      - takbis-data:/app/data
     expose:
       - "3000"
     # Dokploy dışında, doğrudan denemek için yorum satırını açın:
     # ports:
     #   - "3000:3000"
+
+volumes:
+  takbis-data:

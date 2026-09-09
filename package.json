@@ -31,8 +31,11 @@
   "dependencies": {
     "docx": "^9.7.1",
     "express": "^4.21.2",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.3.0",
     "pdf-parse": "^1.1.1",
     "undici": "^8.4.1"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
   }
 }

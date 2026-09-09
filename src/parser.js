@@ -160,7 +160,6 @@ function parseKayitBilgisi(flatText) {
     let value = flatText.slice(cur.valueStart, valueEnd).trim();
     // Sondaki "Ana Taşınmaz Nitelik" gibi alanlarda kalan etiket kırıntılarını temizle
     value = value.replace(/\s+/g, ' ').trim();
-    if (value === '-' || value === '') value = value === '-' ? '-' : '';
     result[cur.key] = value;
   }
   return result;
@@ -185,11 +184,6 @@ function splitSections(lines) {
   }
   return sections;
 }
-
-// Kurum - tarih - yevmiye kalıbı:  "Osmangazi - 11-09-2023 15:02 - 62903"
-// Kurum tek kelimedir (tapu müdürlüğü adı: Osmangazi, Nilüfer, Kestel ...)
-const KURUM_TARIH_YEV =
-  /([A-Za-zÇĞİÖŞÜçğıöşü]+)\s*-\s*(\d{2}-\d{2}-\d{4})\s+(\d{2}:\d{2})\s*-\s*(\d*)/g;
 
 // ---------------------------------------------------------------------------
 // 3) Şerh / Beyan / İrtifak bilgileri (taşınmaza ve mülkiyete ait ortak mantık)

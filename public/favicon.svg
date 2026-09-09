@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img" aria-label="TAKBİS Okuyucu">
+  <rect width="16" height="16" rx="2.9" fill="#1B2740"/>
+  <rect x="4" y="2.7" width="1.5" height="10.6" fill="#A81E15"/>
+  <g fill="#E9ECE1">
+    <rect x="6.3" y="3.9" width="6.4" height="1.5"/>
+    <rect x="6.3" y="6.7" width="6.4" height="1.5"/>
+    <rect x="6.3" y="9.5" width="6.4" height="1.5"/>
+    <rect x="6.3" y="12.3" width="3.33" height="1.5"/>
+  </g>
+</svg>
