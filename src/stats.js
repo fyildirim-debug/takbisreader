@@ -41,10 +41,24 @@ function load() {
     return emptyStats();
   }
 }
+// Dizin bir kez oluşturulur (her yazımda mkdirSync çağırmak gereksiz syscall'dı)
+let dizinHazir = false;
+function dizinHazirla() {
+  if (dizinHazir) return;
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  dizinHazir = true;
+}
+
+// ATOMİK yazım: önce geçici dosyaya yaz, sonra rename et.
+// Doğrudan writeFileSync sırasında süreç ölürse stats.json yarım kalıyor,
+// sonraki açılışta JSON.parse patlıyor ve load() emptyStats()'a düşerek
+// TÜM istatistikleri sıfırlıyordu. rename() aynı dosya sisteminde atomiktir.
 function save() {
   try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(STATS_FILE, JSON.stringify(stats));
+    dizinHazirla();
+    const gecici = STATS_FILE + '.tmp';
+    fs.writeFileSync(gecici, JSON.stringify(stats));
+    fs.renameSync(gecici, STATS_FILE);
   } catch { /* yoksay */ }
 }
 function scheduleSave() {
@@ -61,7 +75,16 @@ for (const sig of ['SIGINT', 'SIGTERM']) {
 }
 process.on('beforeExit', flushNow);
 
-function dayKey(d = new Date()) { return d.toISOString().slice(0, 10); }
+// Gün anahtarı TÜRKİYE saatine göre üretilir. Eskiden UTC kullanılıyordu; panel
+// ise Europe/Istanbul ile gösterdiği için 00:00–03:00 arasındaki ziyaretler bir
+// önceki güne yazılıyordu ("Bugün" kartı sabaha karşı yanlış çıkıyordu).
+// 'en-CA' yerel ayarı YYYY-MM-DD biçimini verir.
+const GUN_BICIM = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit',
+});
+function dayKey(d = new Date()) {
+  try { return GUN_BICIM.format(d); } catch { return d.toISOString().slice(0, 10); }
+}
 
 // Bot / izleme araçları: ziyaret sayılmaz, erişim kaydına "bot" düşülür
 const BOT_RE = /bot|crawler|spider|curl|wget|python-requests|go-http|headless|uptime|monitor|pingdom|statuscake|healthcheck/i;
@@ -70,7 +93,7 @@ export function isBot(ua) { return BOT_RE.test(String(ua || '')); }
 // Erişim kaydı (append-only JSONL): KVKK/5651 amaçlı
 function appendAccess(entry) {
   try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    dizinHazirla();
     fs.appendFileSync(ACCESS_FILE, JSON.stringify(entry) + '\n');
   } catch { /* yoksay */ }
 }
@@ -137,15 +160,36 @@ export function uaToText(ua = '') {
   return b + (os ? ' · ' + os : '') + mob;
 }
 
-// Erişim kaydının tamamını oku (en yeni başta). Güvenlik tavanı: son 100k satır.
-function accessAll(limit = 100000) {
+// Erişim kaydından TEK BİR SAYFA oku (en yeni başta) + toplam kayıt sayısı.
+//
+// Eskiden accessAll() son 100.000 satırın TAMAMINI JSON.parse ediyor, sonra
+// bunlardan yalnızca 50'si gösteriliyordu; her /stats görüntülemesi yüzlerce MB
+// geçici nesne üretiyordu. Artık yalnızca istenen 50 satır ayrıştırılır.
+// Görünen çıktı birebir aynıdır (en yeni kayıt en üstte).
+// `offsetFn(toplam)` sayfayı toplam kayıt sayısına göre seçer; böylece dosya
+// tek seferde okunur (önce sayıp sonra tekrar okumaya gerek kalmaz).
+function accessSayfa(offsetFn, limit = 50, tavan = 100000) {
   try {
-    const lines = fs.readFileSync(ACCESS_FILE, 'utf8').split('\n').filter(Boolean);
-    return lines.slice(-limit).reverse()
-      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
-      .filter(Boolean);
+    const lines = fs.readFileSync(ACCESS_FILE, 'utf8').split('\n');
+    // Boş satırları at (dosya sonundaki '\n' dahil)
+    let son = lines.length;
+    while (son > 0 && !lines[son - 1]) son--;
+    let ilk = 0;
+    while (ilk < son && !lines[ilk]) ilk++;
+    // Güvenlik tavanı: yalnızca son `tavan` satır dikkate alınır
+    const basla = Math.max(ilk, son - tavan);
+    const toplam = son - basla;
+    const offset = Math.max(0, offsetFn(toplam) | 0);
+    // En yeni başta: sondan başlayarak `offset` kadar atla, `limit` kadar al
+    const rows = [];
+    for (let i = son - 1 - offset; i >= basla && rows.length < limit; i--) {
+      const l = lines[i];
+      if (!l) continue;
+      try { rows.push(JSON.parse(l)); } catch { /* bozuk satır atlanır */ }
+    }
+    return { toplam, rows };
   } catch {
-    return [];
+    return { toplam: 0, rows: [] };
   }
 }
 
@@ -232,11 +276,15 @@ export function renderStatsPage(query = {}) {
   const vp = clampPage(query.vp, vPages);
   const visitorsPage = allVisitors.slice((vp - 1) * SAYFA_BOYU, vp * SAYFA_BOYU);
 
-  // --- Erişim kayıtları, sayfalı ---
-  const allLogs = accessAll();
-  const lPages = Math.max(1, Math.ceil(allLogs.length / SAYFA_BOYU));
-  const lp = clampPage(query.lp, lPages);
-  const logsPage = allLogs.slice((lp - 1) * SAYFA_BOYU, lp * SAYFA_BOYU);
+  // --- Erişim kayıtları, sayfalı (dosya tek okunur, yalnızca 50 satır ayrıştırılır) ---
+  let lp = 1, lPages = 1;
+  const log = accessSayfa((toplam) => {
+    lPages = Math.max(1, Math.ceil(toplam / SAYFA_BOYU));
+    lp = clampPage(query.lp, lPages);
+    return (lp - 1) * SAYFA_BOYU;
+  }, SAYFA_BOYU);
+  const logsPage = log.rows;
+  const logToplam = log.toplam;
 
   const vHref = (p) => `/stats?vp=${p}&lp=${lp}#ips`;
   const lHref = (p) => `/stats?vp=${vp}&lp=${p}#log`;
@@ -328,7 +376,7 @@ export function renderStatsPage(query = {}) {
     ${pagerHtml(vp, vPages, vHref)}</div>
 
   <div class="panel" id="log"><h2>🗂️ Erişim Kayıtları — KVKK/5651
-    <span class="meta">— toplam ${allLogs.length} kayıt · sayfa ${lp}/${lPages}</span></h2>
+    <span class="meta">— toplam ${logToplam} kayıt · sayfa ${lp}/${lPages}</span></h2>
     <table><thead><tr><th>Tarih · Saat</th><th>IP Adresi</th><th>İşlem</th><th>Tarayıcı / Cihaz</th></tr></thead>
     <tbody>${logRows}</tbody></table>
     ${pagerHtml(lp, lPages, lHref)}</div>

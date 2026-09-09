@@ -20,3 +20,8 @@ Thumbs.db
 
 # Serena MCP araç metadata'sı
 .serena/
+
+# Impeccable: tasarım kaydı (design.json, surfaces/) depoya girer;
+# QA ekran görüntüleri ve karar sayfası oturum logları girmez.
+.impeccable/review/
+.impeccable/questions/

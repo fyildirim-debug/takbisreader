@@ -1,0 +1,614 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "title": "Design System: TAKBIS Okuyucu",
+  "extensions": {
+    "colorMeta": {
+      "cilt": {
+        "role": "primary",
+        "displayName": "Cilt Laciverti",
+        "canonical": "#1B2740",
+        "dark": "#0E1626",
+        "tonalRamp": [
+          "#070B12",
+          "#0E1626",
+          "#1B2740",
+          "#243352",
+          "#35496F",
+          "#4E6690",
+          "#8FA0BE",
+          "#D6DEEA"
+        ]
+      },
+      "cilt-2": {
+        "role": "primary",
+        "displayName": "Cilt Hover",
+        "canonical": "#243352",
+        "dark": "#172234"
+      },
+      "cilt-3": {
+        "role": "primary",
+        "displayName": "Cilt Kenarı",
+        "canonical": "#35496F",
+        "dark": "#2A3B58"
+      },
+      "cilt-ink": {
+        "role": "neutral",
+        "displayName": "Cilt Mürekkebi",
+        "canonical": "#E4E9DC",
+        "dark": "#DDE3D4"
+      },
+      "cilt-ink-2": {
+        "role": "neutral",
+        "displayName": "Cilt İkincil Mürekkebi",
+        "canonical": "#9DACC4",
+        "dark": "#8494AC"
+      },
+      "cilt-rule": {
+        "role": "neutral",
+        "displayName": "Cilt Cetveli",
+        "canonical": "#33425F",
+        "dark": "#23314A"
+      },
+      "kagit": {
+        "role": "neutral",
+        "displayName": "Defter Kâğıdı",
+        "canonical": "#E9ECE1",
+        "dark": "#171E2B",
+        "tonalRamp": [
+          "#171E2B",
+          "#252E40",
+          "#4A5241",
+          "#8F9A83",
+          "#A9B398",
+          "#C4CCB5",
+          "#D7DCC9",
+          "#E9ECE1"
+        ]
+      },
+      "kagit-2": {
+        "role": "neutral",
+        "displayName": "Kâğıt İkinci Kademe",
+        "canonical": "#E2E6D8",
+        "dark": "#1D2534"
+      },
+      "kagit-3": {
+        "role": "neutral",
+        "displayName": "Kâğıt Üçüncü Kademe",
+        "canonical": "#D7DCC9",
+        "dark": "#252E40"
+      },
+      "murekkep": {
+        "role": "neutral",
+        "displayName": "Ana Mürekkep",
+        "canonical": "#15190F",
+        "dark": "#E6EBDA"
+      },
+      "murekkep-2": {
+        "role": "neutral",
+        "displayName": "İkincil Mürekkep",
+        "canonical": "#4A5241",
+        "dark": "#A9B49C"
+      },
+      "murekkep-3": {
+        "role": "neutral",
+        "displayName": "Etiket Mürekkebi",
+        "canonical": "#565D4D",
+        "dark": "#8F9A83"
+      },
+      "cetvel": {
+        "role": "neutral",
+        "displayName": "Cetvel Çizgisi",
+        "canonical": "#C4CCB5",
+        "dark": "#303B4E"
+      },
+      "cetvel-2": {
+        "role": "neutral",
+        "displayName": "Ağır Cetvel",
+        "canonical": "#A9B398",
+        "dark": "#435066"
+      },
+      "numarator": {
+        "role": "primary",
+        "displayName": "Numaratör Moru",
+        "canonical": "#5B3D96",
+        "dark": "#B39CE8",
+        "tonalRamp": [
+          "#1E1233",
+          "#2E1D4E",
+          "#432C70",
+          "#5B3D96",
+          "#7B5FB8",
+          "#9E86D2",
+          "#C9B8F0",
+          "#EBE3FA"
+        ]
+      },
+      "numarator-2": {
+        "role": "primary",
+        "displayName": "Açık Numaratör",
+        "canonical": "#7B5FB8",
+        "dark": "#C9B8F0"
+      },
+      "engel": {
+        "role": "tertiary",
+        "displayName": "Engel Kırmızısı",
+        "canonical": "#A81E15",
+        "dark": "#F1938A",
+        "tonalRamp": [
+          "#2C0806",
+          "#4A0F0B",
+          "#711510",
+          "#A81E15",
+          "#CE4C41",
+          "#E58278",
+          "#F4C0BA",
+          "#FBEAE8"
+        ]
+      },
+      "engel-zemin": {
+        "role": "tertiary",
+        "displayName": "Engel Zemini",
+        "canonical": "#F4DFDD",
+        "dark": "#3A1B18"
+      },
+      "engel-cetvel": {
+        "role": "tertiary",
+        "displayName": "Engel Cetveli",
+        "canonical": "#DDB4B0",
+        "dark": "#6B2F29"
+      },
+      "dikkat": {
+        "role": "tertiary",
+        "displayName": "Dikkat Amberi",
+        "canonical": "#8A5A00",
+        "dark": "#DFB569",
+        "tonalRamp": [
+          "#241700",
+          "#3D2800",
+          "#5C3B00",
+          "#8A5A00",
+          "#B27B14",
+          "#D2A452",
+          "#E8CB96",
+          "#F7EDD8"
+        ]
+      },
+      "dikkat-zemin": {
+        "role": "tertiary",
+        "displayName": "Dikkat Zemini",
+        "canonical": "#F4E8D2",
+        "dark": "#35280D"
+      },
+      "dikkat-cetvel": {
+        "role": "tertiary",
+        "displayName": "Dikkat Cetveli",
+        "canonical": "#DCC69A",
+        "dark": "#63501F"
+      },
+      "temiz": {
+        "role": "tertiary",
+        "displayName": "Temiz Yeşili",
+        "canonical": "#1E6B4A",
+        "dark": "#7FC9A3",
+        "tonalRamp": [
+          "#06180F",
+          "#0C2B1C",
+          "#14472F",
+          "#1E6B4A",
+          "#2F8F66",
+          "#5CB78C",
+          "#A2D7BC",
+          "#DFF0E7"
+        ]
+      },
+      "temiz-zemin": {
+        "role": "tertiary",
+        "displayName": "Temiz Zemini",
+        "canonical": "#DAE8DF",
+        "dark": "#12301F"
+      },
+      "temiz-cetvel": {
+        "role": "tertiary",
+        "displayName": "Temiz Cetveli",
+        "canonical": "#A9C6B5",
+        "dark": "#2E5A41"
+      },
+      "ada-sayfa": {
+        "role": "island",
+        "displayName": "Belge Adası — sayfa",
+        "canonical": "#ffffff",
+        "purpose": "Belge adasının sayfa zemini; her iki temada beyaz kalır (çıktı .docx). Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-serit": {
+        "role": "island",
+        "displayName": "Belge Adası — serit",
+        "canonical": "#F1F1EC",
+        "purpose": "Ada araç çubuğunun zemini. Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-serit-cetvel": {
+        "role": "island",
+        "displayName": "Belge Adası — serit-cetvel",
+        "canonical": "#DCDCD2",
+        "purpose": "Ada araç çubuğunun alt cetveli. Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-denetim-kenar": {
+        "role": "island",
+        "displayName": "Belge Adası — denetim-kenar",
+        "canonical": "#CFCFC3",
+        "purpose": "Ada denetim kenarı ve ayraç. Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-denetim-hover": {
+        "role": "island",
+        "displayName": "Belge Adası — denetim-hover",
+        "canonical": "#E2E2D8",
+        "purpose": "Ada düğme hover zemini. Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-serit-murekkep": {
+        "role": "island",
+        "displayName": "Belge Adası — serit-murekkep",
+        "canonical": "#2C3026",
+        "purpose": "Ada araç çubuğu mürekkebi. Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-govde-murekkep": {
+        "role": "island",
+        "displayName": "Belge Adası — govde-murekkep",
+        "canonical": "#16180F",
+        "purpose": "Ada gövde metni. Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-etkin-zemin": {
+        "role": "island",
+        "displayName": "Belge Adası — etkin-zemin",
+        "canonical": "#DED3F2",
+        "purpose": "Etkin biçim düğmesinin zemini. Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "ada-yertutucu": {
+        "role": "island",
+        "displayName": "Belge Adası — yertutucu",
+        "canonical": "#6E7266",
+        "purpose": "Boş editörün yer tutucu metni (beyaz üzerinde 4.6:1). Kapalı alt palet: ada dışında kullanılamaz."
+      },
+      "perde": {
+        "role": "neutral",
+        "displayName": "Perde",
+        "canonical": "rgba(10,15,25,.5)",
+        "purpose": "Örtü. CSS'te adı yoktur; bu anahtar DESIGN.md etiketidir."
+      },
+      "perde-kip": {
+        "role": "neutral",
+        "displayName": "Kip Perdesi",
+        "canonical": "rgba(10,15,25,.55)",
+        "purpose": "Kip örtüsü. CSS'te adı yoktur."
+      },
+      "ed-yazi-varsayilan": {
+        "role": "input-default",
+        "displayName": "Editör Yazı Rengi Varsayılanı",
+        "canonical": "#C00000",
+        "purpose": "Word'ün kırmızısı; kullanıcı girdisinin başlangıç değeri, palet değil."
+      },
+      "ed-vurgu-varsayilan": {
+        "role": "input-default",
+        "displayName": "Editör Vurgu Varsayılanı",
+        "canonical": "#FFFF00",
+        "purpose": "Vurgu sarısı; kullanıcı girdisinin başlangıç değeri, palet değil."
+      },
+      "yikici": {
+        "role": "secondary",
+        "displayName": "Yıkıcı Eylem Mürekkebi",
+        "canonical": "#8E2A20",
+        "dark": "#E0918A",
+        "purpose": "Yalnızca yıkıcı eylem ve hata: geçmişi temizle, fiş sil, kip kapat, .err. Hüküm değildir; --engel ile karıştırılmaz.",
+        "tonalRamp": [
+          "#240A07",
+          "#3D110C",
+          "#5F1B14",
+          "#8E2A20",
+          "#B4503F",
+          "#D0817A",
+          "#E7B5B0",
+          "#F7E4E2"
+        ]
+      },
+      "ada-etkin-kenar": {
+        "role": "island",
+        "displayName": "Belge Adası — etkin düğme kenarı",
+        "canonical": "#8E77C9",
+        "purpose": "Etkin biçim düğmesinin kenarı. Sabit değer: ada gece de açık kaldığı için temaya bağlı token kullanılamaz."
+      },
+      "ada-etkin-murekkep": {
+        "role": "island",
+        "displayName": "Belge Adası — etkin düğme mürekkebi",
+        "canonical": "#4A2F80",
+        "purpose": "Etkin biçim düğmesinin metni. var(--numarator) gece #DED3F2 üzerinde 1.66:1'e düşüyordu; sabitlendi."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Belge Başlığı",
+        "purpose": "Yalnızca .doc-title — işlenen dosyanın adı."
+      },
+      "headline": {
+        "displayName": "Hüküm Sözü",
+        "purpose": "Yalnızca .karne-hukum .soz — kütük özetinin kararı."
+      },
+      "title": {
+        "displayName": "Uygulama Başlığı",
+        "purpose": "header h1; gövde tabanı da 15px."
+      },
+      "body": {
+        "displayName": "Gövde",
+        "purpose": "Karne maddesi, kanaat, .kv satırı, açıklama metni. Düzyazı 68ch ile sınırlı."
+      },
+      "label": {
+        "displayName": "Versal Etiket",
+        "purpose": "Sistemin en çok tekrarlanan birimi: .etiket, .section h3, .kv .k, th, .tag."
+      },
+      "data": {
+        "displayName": "Veri Monosu",
+        "purpose": "Ölçülen her değer: numara, tarih, tutar, koordinat, ham metin."
+      },
+      "subtitle": {
+        "displayName": "Alan Başlığı",
+        "purpose": "#drop h2 — kayıt bırakma alanının çağrısı."
+      },
+      "belge-govde": {
+        "displayName": "Belge Gövdesi",
+        "purpose": ".ed — belge adasının metin ölçüsü. Arayüz rampasına ait değildir."
+      },
+      "kimlik": {
+        "displayName": "Kimlik",
+        "purpose": ".doc-kimlik .kimlik b — ada/parsel ve cilt/sayfa. Sayfadaki en büyük tip taşınmazın numarasıdır."
+      },
+      "sayim": {
+        "displayName": "Sayım",
+        "purpose": ".sayim-satir .adet — kütük özetindeki kayıt sayıları; tutar 14px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paspartu",
+        "value": "0 0 0 4px var(--kagit-3)",
+        "purpose": "Yükseltme değil: karanlık temada beyaz belge adasının (.word-ed) parlamasını kesen bulanıksız, ofsetsiz çerçeve halkası. Sistemde bulanık gölge yoktur."
+      }
+    ],
+    "motion": [
+      {
+        "name": "damga",
+        "value": "@keyframes damga { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: scale(1); } } — .34s cubic-bezier(.16,.84,.28,1) both",
+        "purpose": "Tek ifade edici hareket: hüküm sözü kâğıda basılır gibi bir kez yerleşir. prefers-reduced-motion altında kapanır."
+      },
+      {
+        "name": "durum-gecisi",
+        "value": "120ms–140ms (color, border-color, background)",
+        "purpose": "Tüm hover ve durum geçişleri."
+      },
+      {
+        "name": "anahtar",
+        "value": "180ms cubic-bezier(.2,.8,.3,1)",
+        "purpose": ".switch rayı ve topuzu; reduced-motion altında kapanır."
+      },
+      {
+        "name": "cekmece",
+        "value": "220ms cubic-bezier(.2,.8,.3,1) transform",
+        "purpose": "≤860px'te kenar çubuğunun kayması; prefers-reduced-motion altında kapatılır."
+      },
+      {
+        "name": "spin",
+        "value": "700ms linear infinite (reduced-motion: 2s)",
+        "purpose": "Yükleme halkası; durdurulmaz, yavaşlatılır."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "dar",
+        "value": "860px"
+      },
+      {
+        "name": "cok-dar",
+        "value": "560px"
+      },
+      {
+        "name": "print",
+        "value": "@media print"
+      }
+    ],
+    "browserSurfaces": {
+      "selection": "::selection { background: var(--numarator); color: #fff; }",
+      "focusRing": ":focus-visible { outline: 2px solid var(--numarator); outline-offset: 2px; border-radius: 1px; }",
+      "scrollbar": "* { scrollbar-width: thin; scrollbar-color: var(--cetvel-2) transparent; } ::-webkit-scrollbar { width: 11px; height: 11px; } ::-webkit-scrollbar-thumb { background: var(--cetvel-2); border: 3px solid var(--kagit); border-radius: 99px; } .sidebar ::-webkit-scrollbar-thumb { background: var(--cilt-3); border-color: var(--cilt); }",
+      "numerals": "body { font-variant-numeric: tabular-nums } ve .veri/.yev/.adet/.mono-uavt üzerinde yeniden bildirilir.",
+      "colorScheme": "color-scheme: light | dark — her iki :root bloğunda bildirilir."
+    },
+    "namedMeasures": [
+      {
+        "name": "--kenar",
+        "value": "74px",
+        "purpose": "Şerh kenarı; .karne-madde ızgarasının işaret sütunu."
+      },
+      {
+        "name": "--olcu",
+        "value": "68ch",
+        "purpose": "Düzyazı ölçüsü; kanaat, .seo-box, .site-foot."
+      }
+    ],
+    "measurementNotes": [
+      {
+        "name": "Pseudo-element kontrast boşluğu",
+        "value": "content ile metin basan kurallar",
+        "purpose": "Otomatik kontrast denetimi DOM metin düğümlerini dolaşır, pseudo-element içeriğini göremez. .ed:empty:before elle ölçülmelidir."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Kopyalama Düğmesi",
+      "kind": "button",
+      "refersTo": "copybtn",
+      "description": "Sessiz, kenar çizgili kare düğme. Kopyalama başarısında yeşile döner ve ikonu onaya çevirir.",
+      "html": "<button class=\"ds-copybtn\" aria-label=\"Kopyala\"><svg class=\"ds-ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"8.5\" y=\"8.5\" width=\"11\" height=\"11\" rx=\"1\"/><path d=\"M15.5 5.5v-1a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h1\"/></svg></button> <button class=\"ds-copybtn ds-ok\" aria-label=\"Kopyalandı\"><svg class=\"ds-ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4.5 12.5l5 5 10-11\"/></svg></button>",
+      "css": ".ds-copybtn { background: transparent; border: 1px solid var(--cetvel-2, #A9B398); color: var(--murekkep-3, #565D4D); width: 27px; height: 27px; padding: 0; border-radius: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: color .12s, border-color .12s, background .12s; } .ds-copybtn:hover { border-color: var(--numarator, #5B3D96); color: var(--numarator, #5B3D96); background: var(--kagit-3, #D7DCC9); } .ds-copybtn:focus-visible { outline: 2px solid var(--numarator, #5B3D96); outline-offset: 2px; border-radius: 1px; } .ds-copybtn.ds-ok { border-color: var(--temiz, #1E6B4A); color: var(--temiz, #1E6B4A); background: var(--temiz-zemin, #DAE8DF); } .ds-ico { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Birincil Düğme",
+      "kind": "button",
+      "refersTo": "copybtn-birincil",
+      "description": "Sayfadaki tek dolgulu düğme: cilt laciverti. Word raporu indirme gibi asıl çıktı eylemi için.",
+      "html": "<button class=\"ds-btn-birincil\"><svg class=\"ds-ico-w\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M13.5 3H6.5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V8z\"/><path d=\"M13.5 3v5h5\"/><path d=\"M8.5 12.5h7M8.5 16h7\"/></svg> Word Raporu İndir</button>",
+      "css": ".ds-btn-birincil { background: var(--cilt, #1B2740); border: 1px solid var(--cilt, #1B2740); color: var(--cilt-ink, #E4E9DC); height: 29px; padding: 0 12px; border-radius: 2px; cursor: pointer; font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; font-size: 11.5px; letter-spacing: .05em; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background .12s, border-color .12s, color .12s; } .ds-btn-birincil:hover { background: var(--cilt-2, #243352); border-color: var(--cilt-2, #243352); color: #fff; } .ds-btn-birincil:focus-visible { outline: 2px solid var(--numarator, #5B3D96); outline-offset: 2px; } .ds-ico-w { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Kayıt Türü Damgası",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Kenar notu damgası: köşesiz, kenar çizgili, nötr mürekkep. Dört tür renkle değil işaret biçimiyle ayrılır.",
+      "html": "<span class=\"ds-tag ds-t-beyan\">Beyan</span> <span class=\"ds-tag ds-t-serh\">Şerh</span> <span class=\"ds-tag ds-t-irtifak\">İrtifak</span> <span class=\"ds-tag ds-t-ipotek\">İpotek</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 5px; font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 2px 7px; border: 1px solid var(--cetvel-2, #A9B398); background: var(--kagit-2, #E2E6D8); color: var(--murekkep-2, #4A5241); white-space: nowrap; } .ds-tag:before { content: ''; width: 6px; height: 6px; flex: none; background: currentColor; } .ds-t-beyan:before { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; } .ds-t-serh:before { background: currentColor; } .ds-t-irtifak:before { clip-path: polygon(50% 0, 100% 100%, 0 100%); } .ds-t-ipotek:before { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }"
+    },
+    {
+      "name": "Hüküm Bloğu",
+      "kind": "custom",
+      "refersTo": "karne-hukum-engel",
+      "description": "Kütük Özeti'nin karar plakası. Üç varyant; her biri renk + ikon + büyük harf söz taşır. Panel adı bloğun içine değil, üstündeki .karne-baslik cetveline yazılır.",
+      "html": "<div class=\"ds-hukum ds-h-engel\"><span class=\"ds-soz\"><svg class=\"ds-ico-h\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8.2\"/><path d=\"m6.6 6.6 10.8 10.8\"/></svg>Devre engel var</span><span class=\"ds-not\">Devri engelleyici kayıt bulundu</span></div><div class=\"ds-hukum ds-h-dikkat\"><span class=\"ds-soz\"><svg class=\"ds-ico-h\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4.2 2.8 20h18.4z\"/><path d=\"M12 10v4.2M12 17.2v.1\"/></svg>Dikkat gerekiyor</span><span class=\"ds-not\">Devri engellemeyen kayıtlar var</span></div><div class=\"ds-hukum ds-h-temiz\"><span class=\"ds-soz\"><svg class=\"ds-ico-h\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4.5 12.5l5 5 10-11\"/></svg>Engel görünmüyor</span><span class=\"ds-not\">Engelleyici kayda rastlanmadı</span></div>",
+      "css": ".ds-hukum { min-width: 246px; padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; gap: 5px; border: 1px solid; font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; margin-bottom: 8px; } .ds-etiket { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; font-stretch: 92%; color: inherit; opacity: .72; } .ds-not { font-size: 11.5px; opacity: .78; } .ds-soz { font-size: 17px; font-weight: 700; font-stretch: 88%; letter-spacing: .01em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; animation: ds-damga .34s cubic-bezier(.16,.84,.28,1) both; } .ds-ico-h { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; } .ds-h-engel { background: var(--engel-zemin, #F4DFDD); color: var(--engel, #A81E15); border-color: var(--engel-cetvel, #DDB4B0); } .ds-h-dikkat { background: var(--dikkat-zemin, #F4E8D2); color: var(--dikkat, #8A5A00); border-color: var(--dikkat-cetvel, #DCC69A); } .ds-h-temiz { background: var(--temiz-zemin, #DAE8DF); color: var(--temiz, #1E6B4A); border-color: var(--temiz-cetvel, #A9C6B5); } @keyframes ds-damga { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: scale(1); } } @media (prefers-reduced-motion: reduce) { .ds-soz { animation: none; } }"
+    },
+    {
+      "name": "Tehlike Plakası",
+      "kind": "custom",
+      "refersTo": "plaka",
+      "description": "Sayfanın her yerinde aynı görünen uyarı bloğu. Varsayılan amber, .p-engel ile kırmızı. Yeşil varyantı yoktur.",
+      "html": "<div class=\"ds-plaka ds-p-engel\"><svg class=\"ds-ico-p\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4.2 2.8 20h18.4z\"/><path d=\"M12 10v4.2M12 17.2v.1\"/></svg><div><b>Bu PDF'te metin katmanı yok.</b><span class=\"ds-alt\">Belge taranmış bir görüntü olabilir. Web Tapu'dan yeniden indirilen bir PDF ile deneyin.</span></div></div>",
+      "css": ".ds-plaka { display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px; border: 1px solid var(--dikkat-cetvel, #DCC69A); background: var(--dikkat-zemin, #F4E8D2); color: var(--dikkat, #8A5A00); font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; font-size: 12.5px; line-height: 1.55; margin: 12px 0; } .ds-plaka.ds-p-engel { border-color: var(--engel-cetvel, #DDB4B0); background: var(--engel-zemin, #F4DFDD); color: var(--engel, #A81E15); } .ds-ico-p { width: 15px; height: 15px; margin-top: 1px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; } .ds-plaka b { font-weight: 700; } .ds-alt { color: var(--murekkep-2, #4A5241); display: block; margin-top: 3px; }"
+    },
+    {
+      "name": "Cilt Rafı Fişi",
+      "kind": "nav",
+      "refersTo": "hist-item",
+      "description": "Kenar çubuğundaki geçmiş kaydı. Etkin fiş cilt renginde koyulaşır ve solunda mor sekme taşır.",
+      "html": "<div class=\"ds-raf\"><div class=\"ds-fis ds-aktif\"><div class=\"ds-hn\">takyidat-ornek.pdf</div><div class=\"ds-hm\">Ankara / Çankaya · A/P 1234/5 · 09.09.2026</div><span class=\"ds-hx\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6L6 18\"/></svg></span></div><div class=\"ds-fis\"><div class=\"ds-hn\">tapu-kayit-2.pdf</div><div class=\"ds-hm\">İzmir / Bornova · A/P 88/12 · 08.09.2026</div><span class=\"ds-hx\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6L6 18\"/></svg></span></div></div>",
+      "css": ".ds-raf { background: var(--cilt, #1B2740); width: 274px; font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; } .ds-fis { padding: 11px 14px; border-bottom: 1px solid var(--cilt-rule, #33425F); cursor: pointer; position: relative; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; transition: background .12s; } .ds-fis:hover, .ds-fis.ds-aktif { background: var(--cilt-2, #243352); } .ds-fis.ds-aktif:before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--numarator-2, #7B5FB8); box-shadow: 1px 0 0 var(--numarator-2, #7B5FB8); } .ds-hn { font-size: 12.5px; font-weight: 600; color: var(--cilt-ink, #E4E9DC); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; grid-column: 1; } .ds-hm { font-size: 11px; color: var(--cilt-ink-2, #9DACC4); grid-column: 1 / -1; font-family: ui-monospace, Consolas, monospace; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-hx { grid-column: 2; grid-row: 1; color: var(--cilt-ink-2, #9DACC4); opacity: 0; display: inline-flex; align-items: center; transition: opacity .12s, color .12s; } .ds-hx svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; } .ds-fis:hover .ds-hx { opacity: .65; } .ds-hx:hover { opacity: 1; color: var(--yikici, #8E2A20); }"
+    },
+    {
+      "name": "Etiket–Değer Satırı",
+      "kind": "custom",
+      "refersTo": "kv",
+      "description": "Sicilin form alanları. Kutu yok, zemin yok; her çift bir cetvel çizgisiyle biter, ölçülen değer monoya geçer.",
+      "html": "<div class=\"ds-kv\"><div class=\"ds-row\"><span class=\"ds-k\">Ada/Parsel</span><span class=\"ds-v ds-kv-veri\">1234 / 5</span></div><div class=\"ds-row\"><span class=\"ds-k\">Mahalle/Köy Adı</span><span class=\"ds-v\">Cumhuriyet</span></div><div class=\"ds-row\"><span class=\"ds-k\">Yevmiye</span><span class=\"ds-kv-yev\">2024/18422</span></div></div>",
+      "css": ".ds-kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 0 26px; font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; color: var(--murekkep, #15190F); } .ds-row { display: flex; gap: 12px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--cetvel, #C4CCB5); font-size: 13px; min-width: 0; } .ds-k { color: var(--murekkep-3, #565D4D); min-width: 152px; flex: none; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; font-stretch: 92%; } .ds-v { font-weight: 500; overflow-wrap: anywhere; min-width: 0; } .ds-kv-veri { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; font-variant-numeric: tabular-nums; } .ds-kv-yev { font-family: ui-monospace, Consolas, monospace; font-size: .92em; color: var(--numarator, #5B3D96); font-variant-numeric: tabular-nums; letter-spacing: .01em; }"
+    },
+    {
+      "name": "Cetvelli Tablo",
+      "kind": "custom",
+      "description": "Kart yerine geçen ana veri yüzeyi: versal başlık satırı, hairline satır ayrımı, mono veri sütunları, mor yevmiye. Tür damgası için .ds-tag bileşenine bakın.",
+      "html": "<table class=\"ds-tbl\"><thead><tr><th>Tür</th><th>Açıklama</th><th>Tarih</th><th>Yevmiye</th></tr></thead><tbody><tr><td class=\"ds-tbl-tur\">Beyan</td><td>Yönetim planı</td><td class=\"ds-tbl-veri\">02.11.2019</td><td><span class=\"ds-tbl-yev\">2019/22140</span></td></tr><tr><td class=\"ds-tbl-tur\">Beyan</td><td>Kat irtifakından kat mülkiyetine geçiş</td><td class=\"ds-tbl-veri\">12.03.2024</td><td><span class=\"ds-tbl-yev\">2024/4188</span></td></tr></tbody></table>",
+      "css": ".ds-tbl { width: 100%; border-collapse: collapse; font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; font-size: 12.5px; color: var(--murekkep, #15190F); font-variant-numeric: tabular-nums; } .ds-tbl th, .ds-tbl td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--cetvel, #C4CCB5); vertical-align: top; } .ds-tbl th { color: var(--murekkep-3, #565D4D); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; border-bottom: 1px solid var(--cetvel-2, #A9B398); background: var(--kagit-2, #E2E6D8); } .ds-tbl tbody tr:last-child td { border-bottom: 0; } .ds-tbl tbody tr:hover { background: var(--kagit-2, #E2E6D8); } .ds-tbl-tur { white-space: nowrap; width: 1%; } .ds-tbl-veri { font-family: ui-monospace, Consolas, monospace; font-size: 12px; } .ds-tbl-yev { font-family: ui-monospace, Consolas, monospace; font-size: .92em; color: var(--numarator, #5B3D96); letter-spacing: .01em; }"
+    },
+    {
+      "name": "Rapor Metin Alanı",
+      "kind": "input",
+      "description": "Rapora hazır metnin düzenlenebilir alanı: kenarsız, zeminsiz, mono. Odak halkası dışa değil içe basar, çünkü alan bloğun kenarına yapışıktır.",
+      "html": "<div class=\"ds-rapor\"><div class=\"ds-rapor-head\"><span class=\"ds-rapor-t\">Rapora Hazır Metin — Tapu Takyidat</span></div><textarea class=\"ds-ta\" spellcheck=\"false\">TAPU TAKYİDAT BİLGİLERİ\nTakyidatlar\n\nBeyanlar Hanesinde:\n-Yönetim planı</textarea></div>",
+      "css": ".ds-rapor { border: 1px solid var(--cetvel-2, #A9B398); background: var(--kagit-2, #E2E6D8); } .ds-rapor-head { padding: 11px 15px; background: var(--kagit-3, #D7DCC9); border-bottom: 1px solid var(--cetvel, #C4CCB5); } .ds-rapor-t { font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--murekkep, #15190F); } .ds-ta { width: 100%; border: 0; background: transparent; color: var(--murekkep, #15190F); padding: 15px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; line-height: 1.62; resize: vertical; min-height: 140px; outline: none; display: block; } .ds-ta:focus-visible { outline: 2px solid var(--numarator, #5B3D96); outline-offset: -2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Yevmiye Defteri",
+    "overview": "Ekran, tapu sicilinin sayfasıdır. Solda lacivert bez cilt (cilt rafı ve başlık bandı) kromayı taşır; sağda defter yeşiline çalan çalışma kâğıdı kayıtları tutar. Ayrım kartla veya gölgeyle değil, cetvel çizgisiyle yapılır: her blok 1px'lik bir hairline ile ayrılır, bölüm başlıkları 2px'lik daha ağır bir cetvelle biter. Numaratör moru sicil numaralarının mürekkebidir ve aynı zamanda arayüzün tek etkileşim vurgusudur. Karar renkleri (kırmızı/amber/yeşil) hüküm anlamını Kütük Özeti ile tehlike plakasında taşır.\n\nYoğunluk bilinçlidir: kullanıcı günde onlarca belge işleyen bir değerleme uzmanıdır; taban gövde ölçüsü 13px, etiketler 11px, satır aralığı 1.55'tir. Yüzeyde boş nefes alanı değil, okunur satır ritmi vardır. Koyu SaaS pano dili, yuvarlatılmış kartlar, renkli dolgu düğmeleri ve dekoratif gradyanlar reddedilmiştir.\n\nKaranlık varyant ayrı bir tema değil, aynı dünyanın gecesidir: prefers-color-scheme: dark altında aynı token adları yeniden değerlenir, hiçbir kural veya bileşen değişmez.",
+    "keyCharacteristics": [
+      "Kart ve gölge yok; ayrım yalnızca cetvel çizgisi (1px --cetvel, 2px --cetvel-2).",
+      "Ters tipografi rampası: en büyük tip bir sayıdır (21px mono), başlıklar 11px versal etikettir.",
+      "İki yüz: Archivo (etiket/başlık/düzyazı) + sistem mono (tüm veri değerleri).",
+      "Köşe yarıçapı fiilen sıfır; 2px yalnızca düğme ve alanlarda.",
+      "İkonlar yazılmış SVG <symbol>; emoji ve ikon fontu yok.",
+      "Tek ifade edici hareket: hükmün kâğıda basılması (@keyframes damga)."
+    ],
+    "rules": [
+      {
+        "name": "Hüküm Rengi Kuralı",
+        "body": "Kırmızı/amber/yeşilin yargı anlamı yalnızca iki yerde yaşar: Kütük Özeti bloğu (.karne) ve tehlike plakası (.plaka). Aynı üçlü, arayüzün geri kalanında yalnızca durum rengi olarak görünür ve orası da kapalıdır: kopyalama başarısı (.copybtn.ok) ve çapraz doğrulama (.ok-badge/.warn-badge, .uavt-sel). Yıkıcı eylem bu üçlünün dışındadır (--yikici). Yeni bir yüzeyde bu renkleri üçüncü bir anlamla — marka, kategori veya süs — kullanmak yasaktır.",
+        "section": "colors"
+      },
+      {
+        "name": "Renksiz Okunma Kuralı",
+        "body": "Hüküm asla yalnızca renkle anlatılmaz. .karne-hukum her zaman bir ikon + büyük harf söz taşır: engel → i-block + 'DEVRE ENGEL VAR'; dikkat → i-warn + 'DİKKAT GEREKİYOR'; temiz → i-check + 'ENGEL GÖRÜNMÜYOR'. Madde satırları 'Engel'/'Dikkat'/'İncele' metin jetonunu ikonla taşır. Renk kaldırıldığında karar hâlâ okunmalıdır.",
+        "section": "colors"
+      },
+      {
+        "name": "Tek Vurgu Kuralı",
+        "body": "Etkileşimin (odak, hover, seçim, açık anahtar) tek rengi --numarator'dur. Yeni bir hover veya odak rengi tanımlanmaz. Sapma notu: yön sözleşmesi moru yalnız yevmiye/sicil numaralarında öngörüyordu; sevk edilen yapıda mor aynı zamanda tek etkileşim vurgusudur. Yapı kazanır.",
+        "section": "colors"
+      },
+      {
+        "name": "11px Tabanı Kuralı",
+        "body": "İşlevsel hiçbir metin 11px'in altına inmez. Yasal bilgilendirme dahil en küçük metin 11px'tir. Yeni bir yüzey 10px veya daha küçük bir işlevsel metin getiremez.",
+        "section": "typography"
+      },
+      {
+        "name": "İki Yüz Kuralı",
+        "body": "Yalnızca iki yüz vardır. Archivo etiket, başlık ve düzyazıyı taşır; mono yalnızca ölçülen veriyi taşır. Mono 'teknik görünsün' diye kostüm olarak kullanılmaz; üçüncü bir aile eklenmez.",
+        "section": "typography"
+      },
+      {
+        "name": "Genişlik Ekseni Kuralı",
+        "body": "Archivo'nun genişlik ekseninin üç durağı vardır ve yenisi açılmaz: 88% (header h1, .karne-hukum .soz), 90% (.doc-title), 92% (.etiket, .kv .k). Gövde metni doğal genişlikte kalır.",
+        "section": "typography"
+      },
+      {
+        "name": "Tabular Kuralı",
+        "body": "tabular-nums gövdede açılır ve .veri, .yev, .adet, .mono-uavt üzerinde yeniden bildirilir. Sütun halinde okunan hiçbir sayı orantılı rakamla dizilmez.",
+        "section": "typography"
+      },
+      {
+        "name": "Cetvel Kuralı",
+        "body": "Ayrım çizgiyle yapılır, gölgeyle değil. Yeni bir blok gölge, filter: drop-shadow veya yükseltme katmanı getiremez; ihtiyaç duyduğu ayrımı 1px --cetvel / 2px --cetvel-2 ile alır.",
+        "section": "elevation"
+      },
+      {
+        "name": "Belge Adası Kuralı",
+        "body": "`.word-ed` / `.wtb` / `.ed` tasarım sisteminin dışında, kapalı bir alt palettir ve her iki temada beyaz kalır; içeriği beyaz bir .docx sayfasına gittiği için zemin karartılmaz. ada-* renkleri ve 14px belge ölçüsü ada dışına çıkamaz; ada dışındaki hiçbir yüzey bu değerleri kullanamaz.",
+        "section": "components"
+      },
+      {
+        "name": "Tür İşareti Kuralı",
+        "body": "Kayıt türü damgası renkle değil biçimle ayrılır: boş kare = Beyan, dolu kare = Şerh, üçgen = İrtifak, baklava = İpotek. Damgaya karar rengi veya numaratör moru girmez; tür bir hüküm değildir.",
+        "section": "colors"
+      },
+      {
+        "name": "Yıkıcı Eylem Kuralı",
+        "body": "Yıkıcı eylem ve hata --yikici kullanır, --engel kullanamaz. Bir düğmenin kırmızısı taşınmaz hakkında bir yargı gibi okunmamalıdır; silme kırmızısı evrensel bir affordance'tır, hüküm değildir.",
+        "section": "colors"
+      },
+      {
+        "name": "Sayım Satırı Kuralı",
+        "body": "Kütük özetinin sayımları cetvelli satırdır (.sayim-satir), metrik kutusu değil: solda glifli ad, ortada açıklayıcı, sağda sağa dayalı mono rakam. Her satır glif taşır; renk tek taşıyıcı değildir. Yeşil bir sayım satırı yoktur.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do content ile metin basan pseudo-element'lerin kontrastını elle ölç; otomatik denetim onları göremez.",
+      "Do yeni bloğu cetvelle ayır: gövde içi 1px var(--cetvel), blok/bölüm kapanışı 2px var(--cetvel-2).",
+      "Do ölçülen her değeri (numara, tarih, tutar, koordinat) .veri ile monoya al ve tabular-nums koru.",
+      "Do yevmiye/sicil numaralarını .yev ile diz; numaratör mürekkebi oraya aittir.",
+      "Do her karar göstergesine ikon ve metin jetonu ekle; renk tek başına anlam taşımaz.",
+      "Do yeni ikonu <symbol id=\"i-*\"> olarak 24×24 ızgarada, stroke-width: 1.6 ile yaz ve ic('ad') ile bas.",
+      "Do düğme geri bildirimini innerHTML üzerinden ver (flash()); SVG'yi textContent ile silme.",
+      "Do yeni bir yüzeyi 860px ve 560px'te sına: tablolar yatay kaydırılır, karne dikeye döner, kenar çubuğu çekmeceye dönüşür.",
+      "Do yeni token gerektiğinde :root ve koyu medya sorgusuna aynı adla ekle; tema ayrımı ada değil değere yazılır."
+    ],
+    "donts": [
+      "Don't gölge, filter: drop-shadow, yükseltme katmanı veya 'kart' getirme. Modal bile 2px kenarla durur.",
+      "Don't kırmızı/amber/yeşili yargı ve durum dışında üçüncü bir anlamla (marka, kategori, süs) kullanma.",
+      "Don't mor dışında bir hover/odak/seçim vurgusu tanımlama.",
+      "Don't işlevsel metni 11px'in altına indirme; sistemde 10px yoktur.",
+      "Don't üçüncü bir yazı ailesi ekleme; monoyu 'teknik görünsün' diye dekoratif olarak kullanma.",
+      "Don't emoji veya ikon fontu kullanma; <img> ile ikon çekme.",
+      "Don't blok köşelerini yuvarlatma; 2px yarıçap yalnızca dokunulan küçük denetimlere aittir.",
+      "Don't ham metin (.raw), sorumluluk notu (.karne-not) ve altbilgideki yasal bilgilendirmeyi kaldırma; doğrulama yüzeyi sistemin parçasıdır.",
+      "Don't belge adasının (ada-*) renklerini veya 14px gövde ölçüsünü ada dışında kullanma; onlar kapalı bir alt palettir, arayüz tokenı değildir.",
+      "Don't kayıt türü damgasını renkle ayırma; tür işareti biçimle (kare/üçgen/baklava) ayrılır.",
+      "Don't yıkıcı eylem veya hata için --engel kullanma; onun rengi --yikici'dir.",
+      "Don't sayımları metrik kutusuna çevirme; kütük özetinin sayımları cetvelli satırdır ve her biri glif taşır.",
+      "Don't panel adını veya bağlam etiketini bir bloğun içine kicker olarak koyma; paneller adını üst cetvelde taşır (.karne-baslik)."
+    ]
+  }
+}

@@ -9,6 +9,8 @@
  * ve koordinat sorgulanır.
  */
 
+import crypto from 'crypto';
+
 const TKGM = 'https://cbsapi.tkgm.gov.tr/megsiswebapi.v3/api';
 const UA_TKGM = { 'User-Agent': 'Mozilla/5.0 (TAKBIS-Reader; +https://takbisci.com.tr)' };
 const UA_OSM = { 'User-Agent': 'TAKBIS-Reader/1.0 (+https://takbisci.com.tr)' };
@@ -312,11 +314,34 @@ async function validateProxies() {
   }
 }
 
-// Açılışta + periyodik olarak (her 3 dk) proxy havuzunu tazele.
-// Paralı proxy (NVI_PROXY) varsa serbest proxy doğrulamasına gerek yoktur.
-if (!process.env.NVI_PROXY) {
+// Proxy havuzu tazeleme — TEMBEL başlar, boşta durunca kendini kapatır.
+//
+// Eskiden bu görev modül yüklenir yüklenmez başlıyor ve 3 dakikada bir, hiç
+// UAVT sorgusu yapılmasa bile 6 proxy listesi indirip 40 adaya NVİ auth
+// deneniyordu (günde ~19.000 istek). Artık:
+//   - ilk UAVT sorgusunda başlar,
+//   - son UAVT sorgusundan 30 dk sonra kendini durdurur,
+//   - bir sonraki sorguda yeniden başlar.
+// Davranış aynı (sorgu anında havuz hazırdır), boştaki maliyet sıfırdır.
+const PROXY_TAZELEME_MS = 3 * 60e3;
+const PROXY_BOSTA_MS = 30 * 60e3;
+let proxyTimer = null;
+let sonUavtAt = 0;
+
+function proxyDaemonBaslat() {
+  if (process.env.NVI_PROXY) return; // paralı proxy varsa serbest havuza gerek yok
+  sonUavtAt = Date.now();
+  if (proxyTimer) return;
   validateProxies();
-  setInterval(validateProxies, 3 * 60e3).unref?.();
+  proxyTimer = setInterval(() => {
+    if (Date.now() - sonUavtAt > PROXY_BOSTA_MS) {
+      clearInterval(proxyTimer);
+      proxyTimer = null;
+      return;
+    }
+    validateProxies();
+  }, PROXY_TAZELEME_MS);
+  proxyTimer.unref?.();
 }
 
 // NVİ oturumu (cookie + anti-forgery token) — verilen yol (proxy/doğrudan) üzerinden
@@ -387,19 +412,54 @@ function parseBB(j) {
   return liste;
 }
 
+// ProxyAgent önbelleği — LRU + gecikmeli kapatma.
+// Serbest proxy listeleri sürekli döndüğü için her yeni IP:port bir ProxyAgent
+// yaratıyordu ve hiçbiri kapatılmadığından soket/bellek sınırsız büyüyordu.
+// Artık en fazla AGENT_TAVAN ajan tutulur; tahliye edilen ajan HEMEN değil,
+// uçuştaki istekler (en fazla 11 sn zaman aşımı) bitsin diye 60 sn sonra
+// kapatılır — böylece devam eden bir sorgu asla yarıda kesilmez.
+const AGENT_TAVAN = 60;
 const agentCache = new Map();
+
+function agentKorumali(proxy) {
+  // Aktif kullanımdaki yollar asla tahliye edilmez
+  return proxy === workingProxy || goodProxies.includes(proxy);
+}
 function agentFor(proxy) {
   if (!proxy) return null;
-  if (!agentCache.has(proxy)) agentCache.set(proxy, new ProxyAgent('http://' + proxy));
-  return agentCache.get(proxy);
+  const mevcut = agentCache.get(proxy);
+  if (mevcut) {
+    agentCache.delete(proxy); // LRU: en son kullanılanı sona taşı
+    agentCache.set(proxy, mevcut);
+    return mevcut;
+  }
+  const ajan = new ProxyAgent('http://' + proxy);
+  agentCache.set(proxy, ajan);
+  if (agentCache.size > AGENT_TAVAN) {
+    for (const [k, v] of agentCache) {
+      if (agentCache.size <= AGENT_TAVAN) break;
+      if (k === proxy || agentKorumali(k)) continue;
+      agentCache.delete(k);
+      setTimeout(() => { try { v.close?.(); } catch { /* yoksay */ } }, 60e3).unref?.();
+    }
+  }
+  return ajan;
 }
 
 // points: [[lat,lon], ...] — ilk nokta parsel merkezi; çok bloklu parsellerde
 // farklı noktalar farklı blokları (A/B/C/D) yakalar.
 export async function uavtSorgu(points, force = false) {
   if (!Array.isArray(points) || !points.length) throw new Error('Koordinat yok');
+  // Serbest proxy havuzunu (varsa) bu andan itibaren canlı tut
+  proxyDaemonBaslat();
   const [lat0, lon0] = points[0];
-  const key = `u|${(+lat0).toFixed(6)}|${(+lon0).toFixed(6)}|${points.length}`;
+  // Önbellek anahtarı TÜM noktalardan türetilir. Eskiden yalnızca ilk nokta ve
+  // nokta SAYISI kullanılıyordu; aynı merkezden farklı ızgara üreten iki sorgu
+  // (ör. geometri güncellenince) birbirinin sonucunu döndürebiliyordu.
+  const imza = crypto.createHash('sha1')
+    .update(points.map((p) => `${(+p[0]).toFixed(6)},${(+p[1]).toFixed(6)}`).join(';'))
+    .digest('hex').slice(0, 16);
+  const key = `u|${(+lat0).toFixed(6)}|${(+lon0).toFixed(6)}|${points.length}|${imza}`;
   if (force) {
     // "Tekrar sorgula": önbelleği, proxy listesini ve çalışan proxy'yi sıfırla → sıfırdan dene
     cache.delete(key);
