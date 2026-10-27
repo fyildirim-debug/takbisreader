@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Plandan alan ölçümü (m²) — TAKBİS Okuyucu</title>
+<meta name="description" content="Kat planı PDF'i ya da görseli üzerinde ölçek koyup odaları köşe köşe çizin; her alanın m², çevre ve kenar uzunlukları hemen hesaplansın. Dosya sunucuya gönderilmez." />
+<meta name="keywords" content="plandan alan hesaplama, kat planı m2 hesaplama, pdf alan ölçümü, net alan hesaplama, brüt alan, değerleme raporu alan, ekspertiz alan ölçümü" />
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+<meta name="author" content="Furkan Yıldırım" />
+<meta name="theme-color" content="#1B2740" />
+<link rel="canonical" href="https://takbisci.com.tr/alan-olcumu" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/archivo-latin-ext.woff2" as="font" type="font/woff2" crossorigin />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://takbisci.com.tr/alan-olcumu" />
+<meta property="og:site_name" content="TAKBİS Okuyucu" />
+<meta property="og:locale" content="tr_TR" />
+<meta property="og:title" content="Plandan alan ölçümü (m²) — TAKBİS Okuyucu" />
+<meta property="og:description" content="Kat planı üzerinde ölçek koyup odaları çizin; m², çevre ve kenar uzunlukları hemen hesaplansın." />
+<meta property="og:image" content="https://takbisci.com.tr/icon-512.png" />
+<link rel="stylesheet" href="/olcum/olcum.css?v=1" />
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-arma" viewBox="0 0 24 24"><path d="M4 21V6.2a1 1 0 0 1 .7-.95l7-2.2a1 1 0 0 1 .6 0l7 2.2a1 1 0 0 1 .7.95V21"/><path d="M2.5 21h19"/><path d="M9 21v-5.5h6V21"/><path d="M8 9.5h8M8 12.5h8"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M13.5 3H6.5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V8z"/><path d="M13.5 3v5h5"/><path d="M8.5 12.5h7M8.5 16h7"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="1"/><path d="M8.5 10.5V7.5a3.5 3.5 0 1 1 7 0v3"/></symbol>
+<symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M4 8h16M12 4l-8 4 3.2 5.2a4 4 0 0 0 4.8-6.2M12 4l8 4-3.2 5.2a4 4 0 0 1-4.8-6.2"/></symbol>
+</defs></svg>
+
+<header>
+  <a class="marka" href="/" title="TAKBİS Okuyucu ana sayfa">
+    <svg class="arma ico" aria-hidden="true"><use href="#i-arma"/></svg>
+    <span class="ad">TAKBİS Okuyucu</span>
+  </a>
+  <span class="bolum">Plandan alan ölçümü</span>
+  <a class="araca" href="/"><svg class="ico" aria-hidden="true"><use href="#i-file"/></svg><span>Belge ayrıştırıcıya dön</span></a>
+</header>
+
+<div class="app" id="app">
+
+  <nav class="tools" aria-label="Ölçüm araçları">
+    <button class="tool" data-tool="select" title="Seç ve düzenle (V)">
+      <svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-2 6z"/></svg><span>Seç</span>
+    </button>
+    <button class="tool" data-tool="pan" title="Kaydır (H · ya da Boşluk basılı)">
+      <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg><span>Kaydır</span>
+    </button>
+    <div class="tools-sep"></div>
+    <button class="tool tool-scale" data-tool="calibrate" title="Ölçek: bilinen bir ölçüyü çiz (K)">
+      <svg viewBox="0 0 24 24"><path d="M3 15l12-12 6 6-12 12z"/><path d="M7 11l2 2M10 8l2 2M13 5l2 2"/></svg><span>Ölçek</span>
+    </button>
+    <button class="tool" data-tool="area" title="Alan çiz (A)">
+      <svg viewBox="0 0 24 24"><path d="M4 6l9-2 7 6-3 10H6z"/><circle cx="4" cy="6" r="1.6"/><circle cx="13" cy="4" r="1.6"/><circle cx="20" cy="10" r="1.6"/><circle cx="17" cy="20" r="1.6"/><circle cx="6" cy="20" r="1.6"/></svg><span>Alan</span>
+    </button>
+    <button class="tool" data-tool="rect" title="Dikdörtgen alan (R)">
+      <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12"/></svg><span>Dikdörtgen</span>
+    </button>
+    <button class="tool" data-tool="line" title="Mesafe ölç (L)">
+      <svg viewBox="0 0 24 24"><path d="M4 20L20 4"/><path d="M4 15v5h5M20 9V4h-5"/></svg><span>Mesafe</span>
+    </button>
+    <div class="tools-fill"></div>
+    <button class="tool tool-small" id="btnUndo" title="Geri al (Ctrl+Z)">
+      <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/></svg><span>Geri</span>
+    </button>
+    <button class="tool tool-small" id="btnRedo" title="Yinele (Ctrl+Y)">
+      <svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 000 10h3"/></svg><span>İleri</span>
+    </button>
+  </nav>
+
+  <main class="stage-wrap">
+    <div class="topbar">
+      <button class="btn" id="btnOpen" title="PDF ya da görsel aç (Ctrl+O)">
+        <svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Plan aç
+      </button>
+      <div class="file-name" id="fileName">Dosya yok</div>
+      <div class="pager" id="pager" hidden>
+        <button class="btn btn-icon" id="pagePrev" title="Önceki sayfa (PgUp)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <span id="pageInfo" class="num">1 / 1</span>
+        <button class="btn btn-icon" id="pageNext" title="Sonraki sayfa (PgDn)"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="topbar-fill"></div>
+      <label class="toggle" title="Kenar uzunluklarını planda göster">
+        <input type="checkbox" id="optEdges" checked><span>Kenar ölçüleri</span>
+      </label>
+      <label class="toggle" title="İmlecin yanında büyüteç (B)">
+        <input type="checkbox" id="optLoupe" checked><span>Büyüteç</span>
+      </label>
+      <div class="zoom">
+        <button class="btn btn-icon" id="zoomOut" title="Uzaklaş (−)"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+        <button class="btn btn-ghost num" id="zoomFit" title="Sayfaya sığdır (F)">%100</button>
+        <button class="btn btn-icon" id="zoomIn" title="Yakınlaş (+)"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="view"></canvas>
+      <canvas id="loupe" width="168" height="168" hidden></canvas>
+
+      <div class="empty" id="empty">
+        <div class="empty-inner">
+          <h1>Kat planından alan ölçün</h1>
+          <p>Plan PDF'ini ya da görselini buraya bırakın, seçin ya da ekran görüntüsünü yapıştırın (Ctrl+V).</p>
+          <button class="btn btn-primary" id="btnOpen2">Plan seç</button>
+          <ol class="steps">
+            <li><b>Ölçek.</b> Planda ölçüsü yazılı bir çizgiyi uçtan uca çizin, uzunluğunu metre ya da santimetre olarak yazın.</li>
+            <li><b>Alan.</b> Köşelere tek tek tıklayın; ilk noktaya dönünce alan kapanır, m² hemen hesaplanır.</li>
+            <li><b>Tablo.</b> Her alanı adlandırıp kategorisini seçin; tabloyu Excel'e kopyalayın ya da ölçümlü planı indirin.</li>
+          </ol>
+          <p class="empty-note"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>Plan dosyası sunucuya gönderilmez; açma, çizim ve hesap tamamen tarayıcınızda yapılır.</p>
+        </div>
+      </div>
+      <div class="drop-hint" id="dropHint" hidden>Bırakın, açılsın</div>
+    </div>
+
+    <footer class="statusbar">
+      <span id="hint">Bir plan açın.</span>
+      <span class="status-fill"></span>
+      <span id="cursorInfo" class="num"></span>
+    </footer>
+  </main>
+
+  <aside class="panel">
+    <section class="block">
+      <div class="block-head">
+        <h2>Ölçek</h2>
+        <button class="btn btn-ghost btn-sm" id="btnRecal" hidden>Değiştir</button>
+      </div>
+      <div class="scale-box" id="scaleBox">
+        <p class="muted">Ölçek yok. <b>Ölçek</b> aracıyla planda uzunluğu bilinen bir çizgiyi çizin.</p>
+      </div>
+    </section>
+
+    <section class="block block-grow">
+      <div class="block-head">
+        <h2>Alanlar</h2>
+        <span class="muted num" id="areaCount"></span>
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+
+    <section class="block totals" id="totals"></section>
+
+    <section class="block actions">
+      <button class="btn btn-primary" id="btnCopy" title="Excel'e yapıştırmak için tabloyu kopyala">
+        <svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12"/><path d="M16 8V4H4v12h4"/></svg>Tabloyu kopyala</button>
+      <button class="btn" id="btnPng" title="Ölçümlü planı PNG olarak indir">
+        <svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>Görsel indir</button>
+      <button class="btn" id="btnCsv" title="CSV indir">
+        <svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>CSV</button>
+      <button class="btn" id="btnSave" title="Planı ve ölçümleri tek dosyada kaydet (Ctrl+S)">
+        <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>Projeyi kaydet</button>
+      <button class="btn" id="btnLoad" title="Kayıtlı ölçüm projesini aç">
+        <svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>Proje aç</button>
+    </section>
+
+    <section class="block yasal">
+      <p><svg class="ico" aria-hidden="true"><use href="#i-scale"/></svg><span>Ölçümler çizime ve girdiğiniz ölçeğe dayanır, <b>bilgi amaçlıdır</b>; yerinde ölçüm ve resmî röleve yerine geçmez. Site TKGM veya başka bir resmî kurumla bağlantılı değildir.</span></p>
+    </section>
+  </aside>
+</div>
+
+<dialog id="calDlg">
+  <form method="dialog" id="calForm">
+    <h3>Çizdiğiniz çizginin gerçek uzunluğu</h3>
+    <p class="muted" id="calPx"></p>
+    <div class="cal-row">
+      <input id="calVal" inputmode="decimal" autocomplete="off" placeholder="2,60" required aria-label="Uzunluk">
+      <div class="seg" role="radiogroup" aria-label="Birim">
+        <label><input type="radio" name="calUnit" value="m" checked><span>m</span></label>
+        <label><input type="radio" name="calUnit" value="cm"><span>cm</span></label>
+      </div>
+    </div>
+    <p class="err" id="calErr" hidden></p>
+    <p class="muted small">Sonraki tüm çizimler bu ölçeğe göre hesaplanır; önceden çizilen alanlar da yeni ölçeğe göre güncellenir.</p>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-ghost" id="calCancel">İptal</button>
+      <button type="submit" class="btn btn-primary" id="calOk">Ölçeği kaydet</button>
+    </div>
+  </form>
+</dialog>
+
+<input type="file" id="fileInput" accept="application/pdf,image/*" hidden>
+<input type="file" id="projInput" accept=".olcum,.elifcad,.json,application/json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/olcum/pdf.min.js"></script>
+<script src="/olcum/olcum.js?v=1"></script>
+</body>
+</html>

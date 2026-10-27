@@ -292,7 +292,8 @@ header .sub {
   transition: color .12s, border-color .12s, background .12s;
 }
 .menu-toggle { display: none; padding: 8px; }
-.wn-open { margin-left: auto; }
+.wn-open { margin-left: auto; text-decoration: none; }
+.wn-open + .wn-open { margin-left: 0; }
 .menu-toggle:hover, .wn-open:hover { color: var(--cilt-ink); border-color: var(--cilt-3); background: var(--cilt-2); }
 
 /* ==========================================================================
@@ -1131,6 +1132,7 @@ td .veri, td.veri { font-family: var(--yuz-veri); font-size: 12px; }
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <symbol id="i-arma" viewBox="0 0 24 24"><path d="M4 21V6.2a1 1 0 0 1 .7-.95l7-2.2a1 1 0 0 1 .6 0l7 2.2a1 1 0 0 1 .7.95V21"/><path d="M2.5 21h19"/><path d="M9 21v-5.5h6V21"/><path d="M8 9.5h8M8 12.5h8"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"/></symbol>
+  <symbol id="i-olcum" viewBox="0 0 24 24"><path d="M4.5 6.5l8.5-2 6.5 5.5-2.8 9.5H6z"/><path d="M4.5 6.5v.01M13 4.5v.01M19.5 10v.01M16.7 19.5v.01M6 19.5v.01" stroke-width="3.2"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-shelf" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16.2 4.6l3.6.9-3.4 15-3.6-.9z"/></symbol>
@@ -1167,6 +1169,7 @@ td .veri, td.veri { font-family: var(--yuz-veri); font-size: 12px; }
     <h1>TAKBİS / Web Tapu Takyidat Okuyucu</h1>
     <div class="sub">Belgeyi yükleyin — kütük özeti, takyidat dökümü ve rapora hazır metin çıkar</div>
   </div>
+  <a class="wn-open" href="/alan-olcumu" title="Kat planından m² alan ölçümü"><svg class="ico" aria-hidden="true"><use href="#i-olcum"/></svg><span>Alan ölçümü</span></a>
   <button class="wn-open" id="btnWhatsNew" title="Güncelleme notlarını gör"><svg class="ico" aria-hidden="true"><use href="#i-bell"/></svg><span>Yenilikler</span></button>
 </header>
 
@@ -1225,6 +1228,7 @@ td .veri, td.veri { font-family: var(--yuz-veri); font-size: 12px; }
         <li>İpotek sorgulama: alacaklı, borç tutarı, derece/sıra bilgisi</li>
         <li>Rapora hazır "Tapu Takyidat Bilgileri" metni ve Word (.docx) çıktısı</li>
         <li>Gayrimenkul değerleme ve ekspertiz raporu hazırlama yardımcısı</li>
+        <li><a href="/alan-olcumu">Kat planından alan ölçümü</a>: ölçek koyup odaları çizin, m² hemen hesaplansın</li>
       </ul>
       </div>
       <nav class="seo-yan" aria-label="Tapu terimleri rehberi">
@@ -1252,6 +1256,9 @@ td .veri, td.veri { font-family: var(--yuz-veri); font-size: 12px; }
 // Her sürüm bir kez gösterilir; "Yenilikler" düğmesiyle her zaman açılabilir.
 const WN_VERSION = '2026-09-09';
 const WN_NOTES = [
+  { ver: '2026-10-27', items: [
+    '<b>Plandan alan ölçümü eklendi:</b> üst bantta "Alan ölçümü". Kat planı PDF'i ya da görseli üzerinde ölçüsü bilinen bir çizgiyle ölçek koyup odaları köşe köşe çiziyorsunuz; her alanın m², çevre ve kenar uzunlukları hemen hesaplanıyor. Kategori toplamları (net, brüt, balkon…), Excel'e kopyalama ve ölçümlü plan görseli var. Plan dosyası sunucuya gönderilmez.',
+  ]},
   { ver: '2026-09-09', items: [
     '<b>Kütük Özeti eklendi:</b> belgedeki kayıtlar "devri engelleyen", "değeri etkileyen" ve "incelenmeli" olarak ayrılıyor; rapora yapıştırılabilir kanaat paragrafı tek tıkla kopyalanıyor. Tanınmayan kayıtlar temiz sayılmaz, incelenmeli olarak işaretlenir.',
     '<b>Arayüz baştan tasarlandı:</b> tapu sicili düzeni — cilt rafı, cetvelli haneler, yevmiye numaralarına ayrı mürekkep. Koyu tema, işletim sistemi tercihini izler.',

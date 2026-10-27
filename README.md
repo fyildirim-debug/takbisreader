@@ -24,6 +24,7 @@ Bunların üstüne:
 - Excel/CSV ve JSON dışa aktarma
 - TKGM parsel sorgusundan pafta, koordinat ve parsel sınırı; yüzölçümünü TAKBİS'teki değerle karşılaştırıyor
 - OpenStreetMap üzerinden adres ve yakın çevredeki okul, hastane, market, durak mesafeleri
+- Plandan alan ölçümü (`/alan-olcumu`): kat planı PDF'i ya da görseli üzerinde ölçüsü bilinen bir çizgiyle ölçek koyup odaları köşe köşe çiziyorsunuz; m², çevre ve kenar uzunlukları, kategori toplamları, Excel'e kopyalama ve ölçümlü plan görseli. Tamamen tarayıcıda çalışır, plan sunucuya gitmez.
 
 Birden fazla PDF aynı anda yüklenebilir. Taranmış (metin katmanı olmayan) PDF'lerde neden okuyamadığını söylüyor.
 
@@ -77,6 +78,7 @@ src/
   stats.js     Ziyaret sayacı, erişim kayıtları, /stats paneli
 public/
   index.html   Arayüzün tamamı (tek dosya, framework yok)
+  alan-olcumu.html + olcum/   Plandan alan ölçümü (pdf.js 3.11 ile tarayıcıda)
   *.html       Takyidat, şerh/beyan, haciz/ipotek, SSS ve gizlilik sayfaları
 ```
 

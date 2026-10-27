@@ -66,6 +66,9 @@ Yetenekler (hepsi çalışır durumda, korunacak):
   bunu "Bölge Özellikleri"ne metin olarak ekleme.
 - NVİ UAVT: koordinattan bağımsız bölüm listesi, TAKBIS blok/kat bilgisiyle eşleştirme ve seçim.
 - Geçmiş (localStorage), Excel/CSV ve JSON dışa aktarma.
+- Plandan alan ölçümü (`/alan-olcumu`, ayrı sayfa): plan PDF'i/görseli üzerinde ölçek kalibrasyonu,
+  poligon/dikdörtgen alan ve mesafe çizimi; m², çevre, kenar uzunlukları, kategori toplamları,
+  Excel'e kopyalama, CSV, ölçümlü PNG ve proje dosyası. Tamamen tarayıcıda (pdf.js); plan sunucuya gitmez.
 - Yönetici istatistik panosu (`/stats`, Basic Auth).
 
 Kısıtlar:
