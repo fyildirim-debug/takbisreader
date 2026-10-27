@@ -34,7 +34,15 @@ async function jfetch(url, timeoutMs = 12000, headers = UA_TKGM) {
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const r = await fetch(url, { headers, signal: ctrl.signal });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) {
+      // TKGM hata gövdesinde JSON mesaj döner: 404 {"Message":"Parsel Bulunamadı: ..."},
+      // 403 "Günlük sorgu limitini aştınız" — bunları olduğu gibi göster
+      let msg = '';
+      if ((r.headers.get('content-type') || '').includes('json')) {
+        try { msg = (await r.json()).Message || ''; } catch { /* yoksay */ }
+      }
+      throw new Error(msg ? 'TKGM: ' + String(msg).trim() : 'HTTP ' + r.status);
+    }
     // WAF/bakım sayfası gibi HTML dönen yanıtları erken yakala; yoksa
     // r.json() "Unexpected token '<'" gibi anlaşılmaz bir hata verir
     if (!((r.headers.get('content-type') || '').includes('json'))) {
@@ -46,11 +54,19 @@ async function jfetch(url, timeoutMs = 12000, headers = UA_TKGM) {
   }
 }
 
-// "KÜÇÜKKUMLA" ~ "Küçükkumla Köyü" ~ "Bağlarbaşı Mahallesi" eşleştirme
+// "KÜÇÜKKUMLA" ~ "Küçükkumla Köyü" ~ "Bağlarbaşı Mahallesi" eşleştirme.
+// TKGM ilçe/mahalle adlarında Türkçe harfleri tutarsız yazar: "Kizilay",
+// "Altindağ", "Gölbaşi", "Polatli" (ı yerine i; ş/ğ/ç yerinde). TAKBİS ise
+// "KIZILAY" der. tr-TR büyük harfte "Kizilay" → "KİZİLAY" olduğu için birebir
+// karşılaştırma adında "ı" geçen her yerde "mahalle bulunamadı" veriyordu.
+// Çözüm: iki tarafı da ASCII'ye katlayıp karşılaştırmak.
+const TR_ASCII = { 'İ': 'I', 'I': 'I', 'Ş': 'S', 'Ğ': 'G', 'Ü': 'U', 'Ö': 'O', 'Ç': 'C', 'Â': 'A', 'Î': 'I', 'Û': 'U' };
 function norm(s) {
   return String(s || '')
     .toLocaleUpperCase('tr-TR')
     .replace(/\s+(MAHALLESİ|MAHALLESI|MAH\.?|KÖYÜ|KOYU|KÖY)$/u, '')
+    .replace(/[İIŞĞÜÖÇÂÎÛ]/g, (c) => TR_ASCII[c])
+    .replace(/[-_./]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

@@ -236,6 +236,9 @@ app.post('/api/parse', limitParse, govdeTavani, upload.array('files', 50), async
 });
 
 // TKGM parsel + Nominatim adres (önbellekli) — pafta, koordinat, geometri
+// Dış servis hataları 503 ile döner: Cloudflare, origin'den gelen 502/504'ü kendi
+// düz metin "error code: 502" sayfasıyla değiştirir ve JSON'daki hata mesajı
+// istemciye hiç ulaşmaz; 503 olduğu gibi geçer.
 app.get('/api/konum', limitKonum, async (req, res) => {
   try {
     const { il, ilce, mahalle, ada, parsel } = req.query;
@@ -249,7 +252,7 @@ app.get('/api/konum', limitKonum, async (req, res) => {
     }
     res.json({ ...k, adres });
   } catch (err) {
-    res.status(502).json({ error: err.message });
+    res.status(503).json({ error: err.message });
   }
 });
 
@@ -265,7 +268,7 @@ app.get('/api/cevre', limitKonum, async (req, res) => {
     const pois = await cevreAnaliz(lat, lon, keys, req.query.r);
     res.json({ pois });
   } catch (err) {
-    res.status(502).json({ error: err.message });
+    res.status(503).json({ error: err.message });
   }
 });
 
@@ -293,7 +296,7 @@ app.post('/api/uavt', limitUavt, express.json({ limit: '256kb' }), async (req, r
     const liste = await uavtSorgu(points, !!(req.body && req.body.nocache));
     res.json({ liste });
   } catch (err) {
-    res.status(502).json({ error: err.message });
+    res.status(503).json({ error: err.message });
   }
 });
 
